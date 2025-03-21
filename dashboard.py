@@ -5,7 +5,6 @@ import plotly.express as px
 # Carregar dados
 df = pd.read_csv('Dataset_maternal_mental_health_infant_sleep.csv', encoding='latin1')
 
-
 # Pré-processamento corrigido
 def preprocessamento(df):
     # Converter variáveis categóricas
