@@ -5,6 +5,9 @@ import plotly.express as px
 # Carregar dados
 df = pd.read_csv('Dataset_maternal_mental_health_infant_sleep.csv', encoding='latin1')
 
+# Remover dados faltantes codificados como "99:99"
+df = df[df['Sleep_night_duration_bb1'] != '99:99']
+
 # Pré-processamento corrigido
 def preprocessamento(df):
     # Converter variáveis categóricas
