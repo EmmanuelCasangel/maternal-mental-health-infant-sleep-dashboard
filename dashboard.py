@@ -1,95 +1,125 @@
-import streamlit as st  # Por convenção, vamos apelidar o streamlit de st
-import pandas as pd # Importando a biblioteca Pandas
-import altair as alt # Importando a biblioteca
+import pandas as pd
+import streamlit as st
+import plotly.express as px
 
-df = pd.read_csv('NSE-TATAGLOBAL11.csv', sep=',') # Importando a base de dados e transformando em um DataFrame do pandas
-
-# Aqui definimos o título da página e o layout como wide
-st.set_page_config(page_title="Meu Dashboard",layout="wide")
-
-#Título do seu dashboard
-st.write("""
-# Meu primeiro Dashboard
-Abaixo veremos os próximos passos
-""")
+# Carregar dados
+df = pd.read_csv('Dataset_maternal_mental_health_infant_sleep.csv', encoding='latin1')
 
 
-# Importando as demais bibliotecas necessárias
-import numpy as np
-from sklearn.preprocessing import MinMaxScaler
-from keras.models import Sequential
-from keras.layers import Dense, Dropout, LSTM
+# Pré-processamento corrigido
+def preprocessamento(df):
+    # Converter variáveis categóricas
+    marital_status_map = {
+        1: 'Solteira',
+        2: 'Casada/União estável',
+        3: 'Outro'
+    }
+    education_map = {
+        1: 'Fundamental',
+        2: 'Médio',
+        3: 'Superior',
+        4: 'Pós-graduação',
+        5: 'Outro'
+    }
 
-# Manipulando o dataframe
-data = df.sort_index(ascending=True, axis=0)
-new_data = pd.DataFrame(index=range(0,len(df)),columns=['Date', 'Close'])
-for i in range(0,len(data)):
-    new_data['Date'][i] = data['Date'][i]
-    new_data['Close'][i] = data['Close'][i]
+    df['Marital_status'] = df['Marital_status'].map(marital_status_map)
+    df['Education'] = df['Education'].map(education_map)
+    df['sex_baby1'] = df['sex_baby1'].map({1: 'Masculino', 2: 'Feminino'})
 
-# Setando o index
-new_data.index = new_data.Date
-new_data.drop('Date', axis=1, inplace=True)
-new_data.sort_index(ascending=True, inplace=True)
+    # Calcular escores
+    df['EPDS_Total'] = df[[f'EPDS_{i}' for i in range(1, 11)]].sum(axis=1)
+    df['HADS_Total'] = df[['HADS_1', 'HADS_3', 'HADS_5', 'HADS_7', 'HADS_9', 'HADS_11', 'HADS_13']].sum(axis=1)
 
-# Criando a base de treino e test
-dataset = new_data.values
-train = dataset[0:987,:]
-valid = dataset[987:,:]
-scaler = MinMaxScaler(feature_range=(0, 1))
-scaled_data = scaler.fit_transform(dataset)
-x_train, y_train = [], []
-for i in range(60,len(train)):
-    x_train.append(scaled_data[i-60:i,0])
-    y_train.append(scaled_data[i,0])
-x_train, y_train = np.array(x_train), np.array(y_train)
-x_train = np.reshape(x_train, (x_train.shape[0],x_train.shape[1],1))
+    # Corrigir colunas CBTS (a nomenclatura muda após o 12)
+    cbts_columns = [f'CBTS_M_{i}' for i in range(3, 13)] + [f'CBTS_{i}' for i in range(13, 23)]
+    df['CBTS_Total'] = df[cbts_columns].sum(axis=1)
 
-# Setando o modelo
-model = Sequential()
-model.add(LSTM(units=50,  return_sequences=True, input_shape=(x_train.shape[1],1)))
-model.add(LSTM(units=50))
-model.add(Dense(1))
-model.compile(loss='mean_squared_error', optimizer='adam')
-model.fit(x_train, y_train, epochs=1, batch_size=1, verbose=2)
-inputs = new_data[len(new_data) - len(valid) - 60:].values
-inputs = inputs.reshape(-1,1)
-inputs  = scaler.transform(inputs)
-X_test = []
-for i in range(60,inputs.shape[0]):
-    X_test.append(inputs[i-60:i,0])
-X_test = np.array(X_test)
-X_test = np.reshape(X_test, (X_test.shape[0],X_test.shape[1],1))
-closing_price = model.predict(X_test)
-closing_price = scaler.inverse_transform(closing_price)
+    # Converter duração do sono
+    def convert_sleep_duration(time_str):
+        try:
+            if pd.isna(time_str):
+                return None
+            hours, minutes = map(int, str(time_str).split(':'))
+            return hours + minutes / 60
+        except:
+            return None
 
-# Dados de treino e predição
-train = new_data[:987]
-valid = new_data[987:]
-train['date'] = train.index
-valid['date'] = valid.index
-valid['Predictions'] = closing_price
+    df['Sleep_hours'] = df['Sleep_night_duration_bb1'].apply(convert_sleep_duration)
+
+    return df
 
 
+df = preprocessamento(df)
 
-#Título acima do gráfico
-st.write("""
- Previsão de Ações
-""") 
+# Interface Streamlit
+st.set_page_config(page_title="Dashboard Saúde Materno-Infantil", layout="wide")
 
-# Definição do gráfico
-stocks_train = alt.Chart(train).mark_line().encode(
-    x='date',
-    y='Close'
-)
-stocks_valid = alt.Chart(valid).mark_line(color="green").encode(
-    x='date',
-    y='Close'
-)
-stocks_pred = alt.Chart(valid).mark_line(color="red").encode(
-    x='date',
-    y='Predictions'
-)
+# Sidebar
+st.sidebar.header("Filtros")
+age_range = st.sidebar.slider("Idade da Mãe",
+                              min_value=int(df['Age'].min()),
+                              max_value=int(df['Age'].max()),
+                              value=(int(df['Age'].min()), int(df['Age'].max())),
+                              step=1)
 
-# Plotagem do gráfico
-st.altair_chart(stocks_train.interactive() + stocks_valid.interactive() + stocks_pred.interactive(), use_container_width=True)
+selected_education = st.sidebar.multiselect("Escolaridade",
+                                            options=df['Education'].unique(),
+                                            default=df['Education'].unique())
+
+# Aplicar filtros
+filtered_df = df[
+    (df['Age'].between(age_range[0], age_range[1])) &
+    (df['Education'].isin(selected_education))
+    ]
+
+# Visualizações principais
+st.title("Análise de Saúde Mental Materna e Sono Infantil")
+
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.metric("Média EPDS", f"{filtered_df['EPDS_Total'].mean():.1f}")
+with col2:
+    st.metric("Média HADS", f"{filtered_df['HADS_Total'].mean():.1f}")
+with col3:
+    st.metric("Horas de Sono Médio", f"{filtered_df['Sleep_hours'].mean():.1f}")
+
+# Gráficos
+st.subheader("Relação entre Variáveis")
+tab1, tab2, tab3 = st.tabs(["EPDS vs Sono", "HADS vs CBTS", "Distribuições"])
+
+with tab1:
+    fig = px.scatter(filtered_df,
+                     x='EPDS_Total',
+                     y='Sleep_hours',
+                     color='Education',
+                     trendline="ols")
+    st.plotly_chart(fig, use_container_width=True)
+
+with tab2:
+    fig = px.density_contour(filtered_df,
+                             x='HADS_Total',
+                             y='CBTS_Total',
+                             color='Marital_status')
+    st.plotly_chart(fig, use_container_width=True)
+
+with tab3:
+    col1, col2 = st.columns(2)
+    with col1:
+        fig = px.histogram(filtered_df,
+                           x='EPDS_Total',
+                           nbins=20,
+                           color='sex_baby1')
+        st.plotly_chart(fig, use_container_width=True)
+
+    with col2:
+        fig = px.box(filtered_df,
+                     y='Sleep_hours',
+                     x='Marital_status')
+        st.plotly_chart(fig, use_container_width=True)
+
+# Análise de dados brutos
+st.subheader("Dados Brutos")
+st.dataframe(filtered_df[[
+    'Participant_number', 'Age', 'Marital_status', 'Education',
+    'EPDS_Total', 'HADS_Total', 'CBTS_Total', 'Sleep_hours'
+]].head(10), use_container_width=True)
