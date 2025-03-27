@@ -6,3 +6,5 @@ seaborn
 scipy
 matplotlib
 dcor
+sm
+sns

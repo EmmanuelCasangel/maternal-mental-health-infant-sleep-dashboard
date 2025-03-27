@@ -3,7 +3,6 @@ import streamlit as st
 import seaborn as sns
 import matplotlib.pyplot as plt
 from scipy.stats import spearmanr
-from preprocessamento import preprocessamento
 
 def calculate_correlations(df, cols):
     correlations = pd.DataFrame(index=cols, columns=cols)
@@ -16,26 +15,8 @@ def calculate_correlations(df, cols):
     return correlations, p_values
 
 def plot_heatmap(correlations):
-    plt.figure(figsize=(12, 8))  # Further reduce the size of the figure
-    sns.heatmap(correlations.astype(float), cmap="coolwarm", annot=True, fmt=".2f", linewidths=0.1)  # Adjust the linewidths
+    plt.figure(figsize=(12, 8))
+    sns.set(style="whitegrid")  # Define a consistent style
+    sns.heatmap(correlations.astype(float), cmap="coolwarm", annot=True, fmt=".2f", linewidths=0.1)
     plt.title('Mapa de Correlação (Spearman)')
     st.pyplot(plt)
-
-# Carregar dados
-df = pd.read_csv('Dataset_maternal_mental_health_infant_sleep.csv', encoding='latin1')
-
-# Pré-processamento
-df = preprocessamento(df)
-
-# Interface Streamlit
-st.set_page_config(page_title="Mapa de Correlação", layout="wide")
-
-# Calcular e plotar heatmap de correlações
-st.title("Mapa de Correlação (Spearman)")
-cols = [
-    'EPDS_SCORE', 'HADS_SCORE', 'CBTS_SCORE', 'Sleep_hours', 'Age_bb',
-    'night_awakening_number_bb1', 'how_falling_asleep_bb1', 'Marital_status_edit',
-    'Gestationnal_age', 'Age', 'Education', 'sex_baby1', 'Type_pregnancy'
-]
-correlations, p_values = calculate_correlations(df, cols)
-plot_heatmap(correlations)
