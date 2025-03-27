@@ -16,7 +16,7 @@ def calculate_correlations(df, cols):
     return correlations, p_values
 
 def plot_heatmap(correlations):
-    plt.figure(figsize=(4, 3))  # Further reduce the size of the figure
+    plt.figure(figsize=(12, 8))  # Further reduce the size of the figure
     sns.heatmap(correlations.astype(float), cmap="coolwarm", annot=True, fmt=".2f", linewidths=0.1)  # Adjust the linewidths
     plt.title('Mapa de Correlação (Spearman)')
     st.pyplot(plt)
@@ -32,6 +32,10 @@ st.set_page_config(page_title="Mapa de Correlação", layout="wide")
 
 # Calcular e plotar heatmap de correlações
 st.title("Mapa de Correlação (Spearman)")
-cols = ['EPDS_SCORE', 'HADS_SCORE', 'CBTS_SCORE', 'Sleep_hours']
+cols = [
+    'EPDS_SCORE', 'HADS_SCORE', 'CBTS_SCORE', 'Sleep_hours', 'Age_bb',
+    'night_awakening_number_bb1', 'how_falling_asleep_bb1', 'Marital_status_edit',
+    'Gestationnal_age', 'Age', 'Education', 'sex_baby1', 'Type_pregnancy'
+]
 correlations, p_values = calculate_correlations(df, cols)
 plot_heatmap(correlations)
