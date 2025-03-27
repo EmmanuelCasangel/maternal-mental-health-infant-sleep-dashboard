@@ -1,7 +1,6 @@
 import pandas as pd
 import streamlit as st
 import plotly.express as px
-from correlation_heatmap import calculate_correlations, plot_heatmap
 from preprocessamento import preprocessamento
 
 # Carregar dados
@@ -85,8 +84,3 @@ st.dataframe(filtered_df[[
     'Participant_number', 'Age', 'Marital_status', 'Education',
     'EPDS_SCORE', 'HADS_SCORE', 'CBTS_SCORE', 'Sleep_hours'
 ]].head(10), use_container_width=True)
-
-# Calcular e plotar heatmap de correlações
-cols = ['EPDS_SCORE', 'HADS_SCORE', 'CBTS_SCORE', 'Sleep_hours']
-correlations, p_values = calculate_correlations(df, cols)
-plot_heatmap(correlations)
