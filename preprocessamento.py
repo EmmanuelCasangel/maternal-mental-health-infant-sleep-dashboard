@@ -15,6 +15,17 @@ def traduzir_valores(df):
         5: 'Outro'
     }
 
+    # Adicionar coluna categórica para HADS_SCORE
+    def categorize_hads(score):
+        if score <= 7:
+            return 'Improvável'
+        elif 8 <= score <= 11:
+            return 'Possível'
+        else:
+            return 'Provável'
+
+    df['HADS_Category'] = df['HADS_SCORE'].apply(categorize_hads)
+
     df['Marital_status'] = df['Marital_status'].map(marital_status_map)
     df['Education'] = df['Education'].map(education_map)
     df['sex_baby1'] = df['sex_baby1'].map({1: 'Masculino', 2: 'Feminino'})

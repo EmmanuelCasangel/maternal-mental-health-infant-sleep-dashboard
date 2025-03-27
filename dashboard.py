@@ -13,10 +13,6 @@ df = traduzir_valores(df)
 # Interface Streamlit
 st.set_page_config(page_title="Dashboard Saúde Materno-Infantil", layout="wide")
 
-# Exibir dados processados
-st.subheader("Dados Processados")
-st.dataframe(df, use_container_width=True)
-
 # Sidebar
 st.sidebar.header("Filtros")
 age_range = st.sidebar.slider("Idade da Mãe",
@@ -33,7 +29,7 @@ selected_education = st.sidebar.multiselect("Escolaridade",
 filtered_df = df[
     (df['Age'].between(age_range[0], age_range[1])) &
     (df['Education'].isin(selected_education))
-    ]
+]
 
 # Visualizações principais
 st.title("Análise de Saúde Mental Materna e Sono Infantil")
@@ -47,14 +43,21 @@ with col3:
     st.metric("Horas de Sono Médio", f"{filtered_df['Sleep_hours'].mean():.1f}")
 
 # Gráficos
-st.subheader("Relação entre Variáveis")
-tab1, tab2, tab3 = st.tabs(["EPDS vs Sono", "HADS vs CBTS", "Distribuições"])
+st.subheader("")
+tab1, tab2, tab3 = st.tabs(["Analise Descritiva", "Relação entre saude mental e sono", "analises e ferramenta"])
 
 with tab1:
-    fig = px.scatter(filtered_df,
-                     x='EPDS_SCORE',
-                     y='Sleep_hours',
-                     trendline="ols")
+    # Visualização adicional para HADS_Category
+    st.title("Distribuição das Categorias HADS")
+
+    # Gráfico de barras para categorias HADS
+    hads_category_counts = df['HADS_Category'].value_counts().reset_index()
+    hads_category_counts.columns = ['HADS_Category', 'count']
+
+    fig = px.bar(hads_category_counts,
+                 x='HADS_Category', y='count',
+                 labels={'HADS_Category': 'Categoria', 'count': 'Contagem'},
+                 title='Distribuição das Categorias HADS')
     st.plotly_chart(fig, use_container_width=True)
 
 with tab2:
@@ -78,10 +81,3 @@ with tab3:
                      y='Sleep_hours',
                      x='Marital_status')
         st.plotly_chart(fig, use_container_width=True)
-
-# Análise de dados brutos
-st.subheader("Dados Brutos")
-st.dataframe(filtered_df[[
-    'Participant_number', 'Age', 'Marital_status', 'Education',
-    'EPDS_SCORE', 'HADS_SCORE', 'CBTS_SCORE', 'Sleep_hours'
-]].head(10), use_container_width=True)
