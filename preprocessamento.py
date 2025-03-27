@@ -1,10 +1,6 @@
 import pandas as pd
 
-
-def preprocessamento(df):
-    # Remover dados faltantes codificados como "99:99"
-    df = df[df['Sleep_night_duration_bb1'] != '99:99']
-
+def traduzir_valores(df):
     # Converter variáveis categóricas
     marital_status_map = {
         1: 'Solteira',
@@ -22,6 +18,12 @@ def preprocessamento(df):
     df['Marital_status'] = df['Marital_status'].map(marital_status_map)
     df['Education'] = df['Education'].map(education_map)
     df['sex_baby1'] = df['sex_baby1'].map({1: 'Masculino', 2: 'Feminino'})
+
+    return df
+
+def preprocessamento(df):
+    # Remover dados faltantes codificados como "99:99"
+    df = df[df['Sleep_night_duration_bb1'] != '99:99']
 
     # Calcular scores
     df['EPDS_SCORE'] = df[[f'EPDS_{i}' for i in range(1, 11)]].sum(axis=1)

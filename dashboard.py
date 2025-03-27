@@ -1,13 +1,14 @@
 import pandas as pd
 import streamlit as st
 import plotly.express as px
-from preprocessamento import preprocessamento
+from preprocessamento import preprocessamento, traduzir_valores
 
 # Carregar dados
 df = pd.read_csv('Dataset_maternal_mental_health_infant_sleep.csv', encoding='latin1')
 
 # Pré-processamento corrigido
 df = preprocessamento(df)
+df = traduzir_valores(df)
 
 # Interface Streamlit
 st.set_page_config(page_title="Dashboard Saúde Materno-Infantil", layout="wide")
