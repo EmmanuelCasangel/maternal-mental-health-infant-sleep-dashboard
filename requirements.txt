@@ -8,3 +8,4 @@ matplotlib
 dcor
 sm
 sns
+numpy
