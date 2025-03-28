@@ -304,6 +304,12 @@ with tab2:
                   labels={'Education': 'Education', 'EPDS_SCORE': 'EPDS_SCORE'})
     st.plotly_chart(fig3, use_container_width=True)
 
+    # how_falling_asleep_bb1 vs Sleep_hours
+    fig4 = px.box(filtered_df_translate, x='how_falling_asleep_bb1', y='Sleep_hours',
+                  title='Sleep Hours vs How Falling Asleep',
+                  labels={'how_falling_asleep_bb1': 'How Falling Asleep', 'Sleep_hours': 'Sleep Hours'})
+    st.plotly_chart(fig4, use_container_width=True)
+
     # Explanations about the observed relationships
     st.subheader("Interpretation of Relationships")
     st.markdown("""

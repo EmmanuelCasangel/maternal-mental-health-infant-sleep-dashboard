@@ -14,6 +14,13 @@ def translate_values(df):
         4: 'Postgraduate',
         5: 'Other'
     }
+    how_falling_asleep_map = {
+        1: 'While being fed',
+        2: 'While being rocked',
+        3: 'While being held',
+        4: 'Alone in the crib',
+        5: 'In the crib with parental presence'
+    }
 
     # Add categorical column for HADS_SCORE
     def categorize_hads(score):
@@ -28,6 +35,7 @@ def translate_values(df):
     df['Marital_status'] = df['Marital_status'].map(marital_status_map)
     df['Education'] = df['Education'].map(education_map)
     df['sex_baby1'] = df['sex_baby1'].map({1: 'Male', 2: 'Female'})
+    df['how_falling_asleep_bb1'] = df['how_falling_asleep_bb1'].map(how_falling_asleep_map)
 
     return df
 
