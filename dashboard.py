@@ -100,7 +100,7 @@ with tab1:
     ax2.set_ylabel('Frequency')
 
     # Create legend inside the chart
-    ax2.legend(loc='upper left')
+    ax2.legend(loc='best')
 
     plt.tight_layout()
     st.pyplot(fig2)
@@ -267,6 +267,7 @@ with tab1:
     fig = px.bar(hads_category_counts,
                  x='HADS_Category', y='count',
                  color='HADS_Category',
+                 color_discrete_sequence=chart_colors,
                  labels={'HADS_Category': 'Category', 'count': 'Count'},
                  title='Distribution of HADS Categories')
     st.plotly_chart(fig, use_container_width=True)
@@ -329,14 +330,11 @@ with tab3:
     kendall_correlations, _ = calculate_kendall_correlations(filtered_df_translate, cols)
     spearman_correlations, _ = calculate_correlations(filtered_df_translate, cols)
 
-    tab3_col1, tab3_col2 = st.columns(2)
-    with tab3_col1:
-        st.subheader("Correlation Map (Kendall)")
-        plot_kendall_heatmap(kendall_correlations)
+    st.subheader("Correlation Map (Kendall)")
+    plot_kendall_heatmap(kendall_correlations)
 
-    with tab3_col2:
-        st.subheader("Correlation Map (Spearman)")
-        plot_spearman_heatmap(spearman_correlations)
+    st.subheader("Correlation Map (Spearman)")
+    plot_spearman_heatmap(spearman_correlations)
 
     st.subheader("Multiple Linear Regression Analysis")
     perform_multiple_regression(df)
