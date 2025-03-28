@@ -61,8 +61,8 @@ with tab1:
     # Pie chart with age ranges, percentages, and custom legend
     bins_age = [19, 26, 31, 36, 48]
     labels_age = ['19-25', '26-30', '31-35', '36-47']
-    df_translate['Age_Category'] = pd.cut(df_translate['Age'], bins=bins_age, labels=labels_age, right=False)
-    age_counts = df_translate['Age_Category'].value_counts()
+    filtered_df_translate['Age_Category'] = pd.cut(filtered_df_translate['Age'], bins=bins_age, labels=labels_age, right=False)
+    age_counts = filtered_df_translate['Age_Category'].value_counts()
     fig1, ax1 = plt.subplots()
 
     # Custom color palette
@@ -81,7 +81,7 @@ with tab1:
     st.header("Distribution of Education Level")
 
     # Bar chart with custom colors and labels
-    education_counts = df_translate['Education'].value_counts().sort_index()
+    education_counts = filtered_df_translate['Education'].value_counts().sort_index()
 
     # Increase figure size
     fig2, ax2 = plt.subplots(figsize=(12, 8))
@@ -109,7 +109,7 @@ with tab1:
     st.header("Distribution of Marital Status")
 
     # Count the frequency of each marital status
-    marital_status_counts = df['Marital_status_edit'].value_counts()
+    marital_status_counts = filtered_df_translate['Marital_status_edit'].value_counts()
 
     # Dictionary mapping numeric values to descriptive labels
     marital_status_labels = {
@@ -159,7 +159,7 @@ with tab1:
     }
 
     # Count the frequency of categories
-    category_counts = df_translate['Age_bb'].value_counts().sort_index()
+    category_counts = filtered_df_translate['Age_bb'].value_counts().sort_index()
 
     # Map indices to labels
     category_counts.index = category_counts.index.map(age_categories)
@@ -190,7 +190,7 @@ with tab1:
     st.header("Night Awakenings Frequency")
 
     # Count the frequency of night awakenings
-    awake_counts = df_translate['night_awakening_number_bb1'].value_counts().sort_index()
+    awake_counts = filtered_df_translate['night_awakening_number_bb1'].value_counts().sort_index()
 
     # Create the bar chart
     fig_awake, ax_awake = plt.subplots()
@@ -261,7 +261,7 @@ with tab1:
     st.title("Distribution of HADS Categories")
 
     # Bar chart for HADS categories
-    hads_category_counts = df_translate['HADS_Category'].value_counts().reset_index()
+    hads_category_counts = filtered_df_translate['HADS_Category'].value_counts().reset_index()
     hads_category_counts.columns = ['HADS_Category', 'count']
 
     fig = px.bar(hads_category_counts,
