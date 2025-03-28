@@ -266,6 +266,7 @@ with tab1:
 
     fig = px.bar(hads_category_counts,
                  x='HADS_Category', y='count',
+                 color='HADS_Category',
                  labels={'HADS_Category': 'Category', 'count': 'Count'},
                  title='Distribution of HADS Categories')
     st.plotly_chart(fig, use_container_width=True)
