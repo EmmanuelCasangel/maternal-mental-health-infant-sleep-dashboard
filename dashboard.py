@@ -334,12 +334,18 @@ with tab1:
 with tab2:
     st.title("Factors Associated with Postpartum Depression (EPDS_SCORE)")
 
-    # Interactive box plots with trend line
+    # Calculate correlations
+    correlation_sleep_hours = filtered_df_translate['EPDS_SCORE'].corr(filtered_df_translate['Sleep_hours'],
+                                                                       method='spearman')
+    correlation_night_awakenings = filtered_df_translate['EPDS_SCORE'].corr(
+        filtered_df_translate['night_awakening_number_bb1'], method='spearman')
+
+    # Interactive box plots with trend line and correlation index
     st.subheader("Relationship between EPDS_SCORE and Independent Variables")
 
     # Sleep_hours vs EPDS_SCORE
     fig1 = px.box(filtered_df_translate, x='Sleep_hours', y='EPDS_SCORE',
-                  title='EPDS_SCORE vs Sleep_hours',
+                  title=f'EPDS_SCORE vs Sleep_hours (Correlation: {correlation_sleep_hours:.2f})',
                   labels={'Sleep_hours': 'Sleep Hours', 'EPDS_SCORE': 'EPDS_SCORE'})
     x_vals = filtered_df_translate['Sleep_hours']
     y_vals = filtered_df_translate['EPDS_SCORE']
@@ -350,7 +356,7 @@ with tab2:
 
     # night_awakening_number_bb1 vs EPDS_SCORE
     fig2 = px.box(filtered_df_translate, x='night_awakening_number_bb1', y='EPDS_SCORE',
-                  title='EPDS_SCORE vs Number of Night Awakenings',
+                  title=f'EPDS_SCORE vs Number of Night Awakenings (Correlation: {correlation_night_awakenings:.2f})',
                   labels={'night_awakening_number_bb1': 'Number of Night Awakenings', 'EPDS_SCORE': 'EPDS_SCORE'})
     x_vals = filtered_df_translate['night_awakening_number_bb1']
     y_vals = filtered_df_translate['EPDS_SCORE']
