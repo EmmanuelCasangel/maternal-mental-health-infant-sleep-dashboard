@@ -2,62 +2,62 @@ import statsmodels.api as sm
 import streamlit as st
 
 def perform_multiple_regression(df):
-    st.subheader("Análise de Regressão Linear Múltipla")
+    st.subheader("Multiple Linear Regression Analysis")
 
-    # Descrição da análise
+    # Description of the analysis
     st.markdown("""
-    Esta aplicação realiza uma análise de regressão linear múltipla para entender a relação entre diferentes variáveis e a pontuação EPDS.
-    Selecione as variáveis independentes e a variável dependente para visualizar os resultados.
+    This application performs a multiple linear regression analysis to understand the relationship between different variables and the EPDS score.
+    Select the independent variables and the dependent variable to view the results.
     """)
 
-    # Selecionar variáveis independentes e dependente
+    # Select independent and dependent variables
     all_columns = df.columns.tolist()
-    dependent_var = st.selectbox('Selecione a variável dependente', all_columns, index=all_columns.index('EPDS_SCORE'))
-    independent_vars = st.multiselect('Selecione as variáveis independentes', all_columns, default=['Sleep_hours', 'night_awakening_number_bb1', 'Marital_status_edit'])
+    dependent_var = st.selectbox('Select the dependent variable', all_columns, index=all_columns.index('EPDS_SCORE'))
+    independent_vars = st.multiselect('Select the independent variables', all_columns, default=['Sleep_hours', 'night_awakening_number_bb1', 'Marital_status_edit'])
 
     if independent_vars:
         X = df[independent_vars]
         y = df[dependent_var]
 
-        # Adicionar constante para o modelo
+        # Add constant to the model
         X = sm.add_constant(X)
 
-        # Ajustar o modelo de regressão linear múltipla
+        # Fit the multiple linear regression model
         model = sm.OLS(y, X).fit()
 
-        # Exibir resumo do modelo
-        st.subheader("Resumo do Modelo")
+        # Display model summary
+        st.subheader("Model Summary")
         model_summary = model.summary().as_text()
-        st.text_area("Resumo do Modelo", model_summary, height=400)
+        st.text_area("Model Summary", model_summary, height=400)
 
-        # Adicionar dicionário explicativo
-        st.subheader("Interpretação dos Resultados")
+        # Add explanatory dictionary
+        st.subheader("Interpretation of Results")
         st.markdown("""
-        **Dicionário de Saídas:**
+        **Output Dictionary:**
 
-        - **Dep. Variable**: A variável dependente que está sendo prevista pelo modelo.
-        - **R-squared**: A proporção da variância na variável dependente que é explicada pelas variáveis independentes. Valores mais próximos de 1 indicam um melhor ajuste.
-        - **Adj. R-squared**: O R-squared ajustado para o número de variáveis no modelo. É uma medida mais precisa do ajuste do modelo.
-        - **F-statistic**: Teste F para a significância global do modelo. Valores altos indicam que pelo menos uma variável independente é significativa.
-        - **Prob (F-statistic)**: O valor p associado ao teste F. Valores menores que 0.05 indicam que o modelo é estatisticamente significativo.
-        - **Log-Likelihood**: A log-verossimilhança do modelo. Valores mais altos indicam um melhor ajuste.
-        - **AIC/BIC**: Critérios de informação de Akaike e Bayesiano. Valores menores indicam um modelo melhor.
-        - **Df Residuals**: O número de graus de liberdade dos resíduos.
-        - **Df Model**: O número de graus de liberdade do modelo.
-        - **coef**: Os coeficientes estimados para cada variável independente. Indicam a mudança esperada na variável dependente para uma unidade de mudança na variável independente.
-        - **std err**: O erro padrão dos coeficientes. Medida da precisão das estimativas dos coeficientes.
-        - **t**: O valor t para o teste de significância dos coeficientes.
-        - **P>|t|**: O valor p associado ao teste t. Valores menores que 0.05 indicam que o coeficiente é estatisticamente significativo.
-        - **[0.025, 0.975]**: O intervalo de confiança de 95% para os coeficientes.
-        - **Omnibus**: Teste de normalidade dos resíduos. Valores altos indicam que os resíduos não são normalmente distribuídos.
-        - **Prob(Omnibus)**: O valor p associado ao teste Omnibus. Valores menores que 0.05 indicam que os resíduos não são normalmente distribuídos.
-        - **Durbin-Watson**: Teste de autocorrelação dos resíduos. Valores próximos de 2 indicam ausência de autocorrelação.
-        - **Jarque-Bera (JB)**: Teste de normalidade dos resíduos. Valores altos indicam que os resíduos não são normalmente distribuídos.
-        - **Prob(JB)**: O valor p associado ao teste Jarque-Bera. Valores menores que 0.05 indicam que os resíduos não são normalmente distribuídos.
-        - **Skew**: A assimetria dos resíduos. Valores diferentes de 0 indicam assimetria.
-        - **Kurtosis**: A curtose dos resíduos. Valores diferentes de 3 indicam curtose anormal.
-        - **Cond. No.**: O número de condição do modelo. Valores altos indicam problemas de multicolinearidade.
+        - **Dep. Variable**: The dependent variable being predicted by the model.
+        - **R-squared**: The proportion of variance in the dependent variable explained by the independent variables. Values closer to 1 indicate a better fit.
+        - **Adj. R-squared**: The R-squared adjusted for the number of variables in the model. It is a more accurate measure of the model fit.
+        - **F-statistic**: F-test for the overall significance of the model. Higher values indicate that at least one independent variable is significant.
+        - **Prob (F-statistic)**: The p-value associated with the F-test. Values less than 0.05 indicate that the model is statistically significant.
+        - **Log-Likelihood**: The log-likelihood of the model. Higher values indicate a better fit.
+        - **AIC/BIC**: Akaike and Bayesian information criteria. Lower values indicate a better model.
+        - **Df Residuals**: The number of degrees of freedom of the residuals.
+        - **Df Model**: The number of degrees of freedom of the model.
+        - **coef**: The estimated coefficients for each independent variable. Indicate the expected change in the dependent variable for a one-unit change in the independent variable.
+        - **std err**: The standard error of the coefficients. Measure of the precision of the coefficient estimates.
+        - **t**: The t-value for the significance test of the coefficients.
+        - **P>|t|**: The p-value associated with the t-test. Values less than 0.05 indicate that the coefficient is statistically significant.
+        - **[0.025, 0.975]**: The 95% confidence interval for the coefficients.
+        - **Omnibus**: Test for normality of the residuals. Higher values indicate that the residuals are not normally distributed.
+        - **Prob(Omnibus)**: The p-value associated with the Omnibus test. Values less than 0.05 indicate that the residuals are not normally distributed.
+        - **Durbin-Watson**: Test for autocorrelation of the residuals. Values close to 2 indicate no autocorrelation.
+        - **Jarque-Bera (JB)**: Test for normality of the residuals. Higher values indicate that the residuals are not normally distributed.
+        - **Prob(JB)**: The p-value associated with the Jarque-Bera test. Values less than 0.05 indicate that the residuals are not normally distributed.
+        - **Skew**: The skewness of the residuals. Values different from 0 indicate skewness.
+        - **Kurtosis**: The kurtosis of the residuals. Values different from 3 indicate abnormal kurtosis.
+        - **Cond. No.**: The condition number of the model. Higher values indicate multicollinearity problems.
         """)
 
     else:
-        st.write("Por favor, selecione pelo menos uma variável independente.")
+        st.write("Please select at least one independent variable.")
