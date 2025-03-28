@@ -272,6 +272,65 @@ with tab1:
                  title='Distribution of HADS Categories')
     st.plotly_chart(fig, use_container_width=True)
 
+    st.header("Distribution of EPDS Scores")
+
+    # Bar chart for EPDS scores
+    epds_score_counts = filtered_df_translate['EPDS_SCORE'].value_counts().reset_index()
+    epds_score_counts.columns = ['EPDS_SCORE', 'count']
+
+    fig_epds = px.bar(
+        epds_score_counts,
+        x='EPDS_SCORE',
+        y='count',
+        color='EPDS_SCORE',
+        color_continuous_scale=chart_colors,  # Escala contínua
+        labels={'EPDS_SCORE': 'EPDS Score', 'count': 'Count'},
+        title='Distribution of EPDS Scores'
+    )
+
+    # Adicionar linha de referência no valor 12
+    fig_epds.add_shape(
+        type='line',
+        x0=12, x1=12, y0=0, y1=epds_score_counts['count'].max(),
+        line=dict(color='Red', width=2, dash='dash')
+    )
+
+    # Adicionar anotação para a linha de referência
+    fig_epds.add_annotation(
+        x=12, y=epds_score_counts['count'].max(),
+        text='EPDS Score = 12',
+        showarrow=True,
+        arrowhead=1,
+        ax=0,
+        ay=-40
+    )
+
+    # Calculate percentages
+    total_count = epds_score_counts['count'].sum()
+    below_12_count = epds_score_counts[epds_score_counts['EPDS_SCORE'] < 12]['count'].sum()
+    above_12_count = epds_score_counts[epds_score_counts['EPDS_SCORE'] >= 12]['count'].sum()
+
+    below_12_percentage = (below_12_count / total_count) * 100
+    above_12_percentage = (above_12_count / total_count) * 100
+
+    # Add annotations for percentages
+    fig_epds.add_annotation(
+        x=6, y=epds_score_counts['count'].max() * 0.9,
+        text=f'Below 12: {below_12_percentage:.1f}%',
+        showarrow=False,
+        font=dict(size=12, color='Green')
+    )
+
+    fig_epds.add_annotation(
+        x=18, y=epds_score_counts['count'].max() * 0.9,
+        text=f'Above 12: {above_12_percentage:.1f}%',
+        showarrow=False,
+        font=dict(size=12, color='Red')
+    )
+
+    st.plotly_chart(fig_epds, use_container_width=True)
+
+
 with tab2:
     st.title("Factors Associated with Postpartum Depression (EPDS_SCORE)")
 
