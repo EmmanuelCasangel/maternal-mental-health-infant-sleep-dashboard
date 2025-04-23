@@ -53,7 +53,7 @@ st.title("Maternal Mental Health and Infant Sleep Analysis")
 
 # Charts
 st.subheader("")
-tab1, tab2, tab3, tab4 = st.tabs(["Descriptive Analysis", "Factors Associated with Postpartum Depression (EPDS_SCORE)", "Analyses and Tool", "Normality Tests"])
+tab1, tab2, tab3, tab4 = st.tabs(["Descriptive Analysis", "Factors Associated with Postpartum Depression (EPDS_SCORE)", "Simulation", "Analyses and Tool"])
 
 with tab1:
     st.header("Distribution of Maternal Age")
@@ -386,6 +386,225 @@ with tab2:
     """)
 
 with tab3:
+    # Definir as probabilidades de cada nível de escolaridade
+    probabilities = [0.041, 0.475, 0.365, 0.119]
+
+    # Set sample_size to match the size of the original dataset
+    sample_size = len(filtered_df_translate)
+    education_levels = np.random.choice([1, 2, 3, 4], size=sample_size, p=probabilities)
+
+    # Criar o DataFrame
+    df_brasil = pd.DataFrame({'EducationBrazil': education_levels})
+
+    # Mapear os valores para os rótulos descritivos
+    education_labels = {
+        1: "Sem escolaridade",
+        2: "Ensino fundamental",
+        3: "Ensino médio",
+        4: "Ensino superior"
+    }
+    df_brasil['EducationBrazil_Labels'] = df_brasil['EducationBrazil'].map(education_labels)
+
+    # # Exibir o grafico da escolaridade no brasil # #
+
+    # Section: Distribution of Education Level and Brazilian Education Level
+    st.header("Distribution of Education Levels")
+
+    # Chart 1: Original Education Distribution
+    st.subheader("Original Education Distribution")
+    education_counts = filtered_df_translate['Education'].value_counts().sort_index()
+
+    fig1, ax1 = plt.subplots(figsize=(8, 6))
+    bars1 = ax1.bar(education_counts.index, education_counts.values, color=chart_colors)
+
+    ax1.set_xticks(education_counts.index)
+    ax1.set_xticklabels(education_counts.index, rotation=0, ha='center')
+
+    for bar in bars1:
+        yval = bar.get_height()
+        ax1.text(bar.get_x() + bar.get_width() / 2, yval + 0.1, round(yval, 2), ha='center', va='bottom')
+
+    ax1.set_xlabel('Education')
+    ax1.set_ylabel('Frequency')
+    ax1.legend(loc='best')
+
+    plt.tight_layout()
+    st.pyplot(fig1)
+
+
+    #############################################################################################################################################
+
+    # Original Distribution of EPDS Scores
+    st.header("Original Distribution of EPDS Scores")
+
+    # Bar chart for original EPDS scores
+    epds_score_counts_original = filtered_df_translate['EPDS_SCORE'].value_counts().reset_index()
+    epds_score_counts_original.columns = ['EPDS_SCORE', 'count']
+
+    fig_epds_original = px.bar(
+        epds_score_counts_original,
+        x='EPDS_SCORE',
+        y='count',
+        color='EPDS_SCORE',
+        color_continuous_scale=chart_colors,  # Escala contínua
+        labels={'EPDS_SCORE': 'EPDS Score', 'count': 'Count'},
+        title='Original Distribution of EPDS Scores'
+    )
+
+    # Add reference line at value 12
+    fig_epds_original.add_shape(
+        type='line',
+        x0=12, x1=12, y0=0, y1=epds_score_counts_original['count'].max(),
+        line=dict(color='Red', width=2, dash='dash')
+    )
+
+    # Add annotation for the reference line
+    fig_epds_original.add_annotation(
+        x=12, y=epds_score_counts_original['count'].max(),
+        text='EPDS Score = 12',
+        showarrow=True,
+        arrowhead=1,
+        ax=0,
+        ay=-40
+    )
+
+    # Calculate percentages
+    total_count_original = epds_score_counts_original['count'].sum()
+    below_12_count_original = epds_score_counts_original[epds_score_counts_original['EPDS_SCORE'] < 12]['count'].sum()
+    above_12_count_original = epds_score_counts_original[epds_score_counts_original['EPDS_SCORE'] >= 12]['count'].sum()
+
+    below_12_percentage_original = (below_12_count_original / total_count_original) * 100
+    above_12_percentage_original = (above_12_count_original / total_count_original) * 100
+
+    # Add annotations for percentages
+    fig_epds_original.add_annotation(
+        x=6, y=epds_score_counts_original['count'].max() * 0.9,
+        text=f'Below 12: {below_12_percentage_original:.1f}%',
+        showarrow=False,
+        font=dict(size=12, color='Green')
+    )
+
+    fig_epds_original.add_annotation(
+        x=18, y=epds_score_counts_original['count'].max() * 0.9,
+        text=f'Above 12: {above_12_percentage_original:.1f}%',
+        showarrow=False,
+        font=dict(size=12, color='Red')
+    )
+
+    st.plotly_chart(fig_epds_original, use_container_width=True)
+
+
+
+
+    ####################################################################################################################################
+
+
+    # Chart 2: Brazilian Education Distribution
+    st.subheader("Brazilian Education Distribution")
+    education_counts_brazil = df_brasil['EducationBrazil_Labels'].value_counts().sort_index()
+
+    fig2, ax2 = plt.subplots(figsize=(8, 6))
+    bars2 = ax2.bar(education_counts_brazil.index, education_counts_brazil.values, color=chart_colors)
+
+    ax2.set_xticks(range(len(education_counts_brazil.index)))
+    ax2.set_xticklabels(education_counts_brazil.index, rotation=0, ha='center')
+
+    for bar in bars2:
+        yval = bar.get_height()
+        ax2.text(bar.get_x() + bar.get_width() / 2, yval + 0.1, int(yval), ha='center', va='bottom')
+
+    ax2.set_xlabel('Education Level')
+    ax2.set_ylabel('Frequency')
+    ax2.legend(loc='best')
+
+    plt.tight_layout()
+    st.pyplot(fig2)
+
+    ## Simulation of EPDS_SCORE on brasil
+
+    # Ajustar os níveis de escolaridade do banco original para os níveis brasileiros
+    filtered_df_translate['EducationBrazil'] = filtered_df_translate['Education'].replace({
+        4: 4,  # 'UAS or UT Degree' -> 'Ensino superior'
+        5: 4   # 'University' -> 'Ensino superior'
+    })
+
+    # Simular os valores de EPDS_SCORE para o Brasil
+    # Mantendo as proporções do nível de escolaridade original
+    education_proportions = filtered_df_translate['EducationBrazil'].value_counts(normalize=True)
+    simulated_epds_scores = []
+
+    for education_level, proportion in education_proportions.items():
+        # Filtrar os EPDS_SCORE do nível de escolaridade correspondente
+        scores = filtered_df_translate.loc[filtered_df_translate['EducationBrazil'] == education_level, 'EPDS_SCORE']
+        # Simular os valores com base na proporção
+        simulated_scores = np.random.choice(scores, size=int(proportion * len(filtered_df_translate)), replace=True)
+        simulated_epds_scores.extend(simulated_scores)
+
+    # Criar DataFrame com os valores simulados
+    df_simulated = pd.DataFrame({'EPDS_SCORE': simulated_epds_scores})
+
+    # Contar os valores simulados de EPDS_SCORE
+    epds_score_counts_simulated = df_simulated['EPDS_SCORE'].value_counts().reset_index()
+    epds_score_counts_simulated.columns = ['EPDS_SCORE', 'count']
+
+    # Criar o gráfico
+    fig_epds_simulated = px.bar(
+        epds_score_counts_simulated,
+        x='EPDS_SCORE',
+        y='count',
+        color='EPDS_SCORE',
+        color_continuous_scale=chart_colors,  # Escala contínua
+        labels={'EPDS_SCORE': 'EPDS Score', 'count': 'Count'},
+        title='Simulated Distribution of EPDS Scores (Brazil)'
+    )
+
+    # Adicionar linha de referência no valor 12
+    fig_epds_simulated.add_shape(
+        type='line',
+        x0=12, x1=12, y0=0, y1=epds_score_counts_simulated['count'].max(),
+        line=dict(color='Red', width=2, dash='dash')
+    )
+
+    # Adicionar anotação para a linha de referência
+    fig_epds_simulated.add_annotation(
+        x=12, y=epds_score_counts_simulated['count'].max(),
+        text='EPDS Score = 12',
+        showarrow=True,
+        arrowhead=1,
+        ax=0,
+        ay=-40
+    )
+
+    # Calcular porcentagens
+    total_count_simulated = epds_score_counts_simulated['count'].sum()
+    below_12_count_simulated = epds_score_counts_simulated[epds_score_counts_simulated['EPDS_SCORE'] < 12]['count'].sum()
+    above_12_count_simulated = epds_score_counts_simulated[epds_score_counts_simulated['EPDS_SCORE'] >= 12]['count'].sum()
+
+    below_12_percentage_simulated = (below_12_count_simulated / total_count_simulated) * 100
+    above_12_percentage_simulated = (above_12_count_simulated / total_count_simulated) * 100
+
+    # Adicionar anotações para porcentagens
+    fig_epds_simulated.add_annotation(
+        x=6, y=epds_score_counts_simulated['count'].max() * 0.9,
+        text=f'Below 12: {below_12_percentage_simulated:.1f}%',
+        showarrow=False,
+        font=dict(size=12, color='Green')
+    )
+
+    fig_epds_simulated.add_annotation(
+        x=18, y=epds_score_counts_simulated['count'].max() * 0.9,
+        text=f'Above 12: {above_12_percentage_simulated:.1f}%',
+        showarrow=False,
+        font=dict(size=12, color='Red')
+    )
+
+    # Exibir o gráfico no Streamlit
+    st.plotly_chart(fig_epds_simulated, use_container_width=True)
+
+
+
+
+with tab4:
     cols = [
         'EPDS_SCORE', 'HADS_SCORE', 'CBTS_SCORE', 'Sleep_hours', 'Age_bb',
         'night_awakening_number_bb1', 'how_falling_asleep_bb1', 'Marital_status_edit',
@@ -403,46 +622,3 @@ with tab3:
 
     st.subheader("Multiple Linear Regression Analysis")
     perform_multiple_regression(df)
-
-with tab4:
-    st.title("Normality Tests")
-
-    # Perform normality tests
-    normality_results, summary_df = normality_tests(df, cols)
-
-    # Display summary table
-    st.subheader("Summary of Normality Tests")
-    st.dataframe(summary_df)
-
-    # Display detailed results
-    for col, tests in normality_results.items():
-        st.subheader(f"Results for {col}")
-        st.write(f"**Shapiro-Wilk**: Statistic={tests['Shapiro-Wilk'][0]:.4f}, p-value={tests['Shapiro-Wilk'][1]:.4f}")
-        st.write(f"**Kolmogorov-Smirnov**: Statistic={tests['Kolmogorov-Smirnov'][0]:.4f}, p-value={tests['Kolmogorov-Smirnov'][1]:.4f}")
-        st.write(f"**Anderson-Darling**: Statistic={tests['Anderson-Darling'].statistic:.4f}, Critical Values={tests['Anderson-Darling'].critical_values}")
-
-        # Interpretation of results
-        st.write("### Interpretation")
-        if tests['Shapiro-Wilk'][1] < 0.05:
-            st.write("- **Shapiro-Wilk**: The data is not normally distributed (p-value < 0.05).")
-        else:
-            st.write("- **Shapiro-Wilk**: The data is normally distributed (p-value >= 0.05).")
-
-        if tests['Kolmogorov-Smirnov'][1] < 0.05:
-            st.write("- **Kolmogorov-Smirnov**: The data is not normally distributed (p-value < 0.05).")
-        else:
-            st.write("- **Kolmogorov-Smirnov**: The data is normally distributed (p-value >= 0.05).")
-
-        if tests['Anderson-Darling'].statistic > tests['Anderson-Darling'].critical_values[2]:
-            st.write("- **Anderson-Darling**: The data is not normally distributed (statistic > critical value for 5%).")
-        else:
-            st.write("- **Anderson-Darling**: The data is normally distributed (statistic <= critical value for 5%).")
-
-        # Graphical visualizations
-        data = df[col].dropna()
-        fig, axes = plt.subplots(1, 2, figsize=(12, 6))
-        sns.histplot(data, kde=True, ax=axes[0])
-        axes[0].set_title(f'Histogram of {col}')
-        sm.qqplot(data, line='s', ax=axes[1])
-        axes[1].set_title(f'Q-Q Plot of {col}')
-        st.pyplot(fig)
