@@ -4,15 +4,15 @@ def translate_values(df):
     # Convert categorical variables
     marital_status_map = {
         1: 'Single',
-        2: 'Married/Cohabiting',
-        3: 'Other'
+        2: 'In a relationship',
+        3: 'Separated, divorced or widow.'
     }
     education_map = {
-        1: 'Elementary',
-        2: 'High School',
-        3: 'College',
-        4: 'Postgraduate',
-        5: 'Other'
+        1: 'No education',
+        2: 'compulsory school',
+        3: 'Post-compulsory education',
+        4: 'UAS or  UT Degree',
+        5: 'University'
     }
     how_falling_asleep_map = {
         1: 'While being fed',
