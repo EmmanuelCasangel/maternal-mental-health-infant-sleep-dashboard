@@ -7,6 +7,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 from sklearn.decomposition import PCA
+from mpl_toolkits.mplot3d import Axes3D
 
 from preprocessamento import preprocess, translate_values
 from correlation_kendall_heatmap import calculate_kendall_correlations, plot_heatmap as plot_kendall_heatmap
@@ -695,10 +696,6 @@ with tab4:
     # Filtrar o DataFrame
     df_cluster = df[colunas_interesse].dropna()
 
-    ## exibir as colunas selecionadas
-    st.write("Colunas selecionadas para o agrupamento:")
-    st.write(df_cluster.columns.tolist())
-
 
     # Normalizar os dados
     scaler = StandardScaler()
@@ -743,6 +740,46 @@ with tab4:
     plt.grid()
     st.pyplot(plt)
 
+
+    ############ Analise do numero de componentes ideal PCAS #############################
+
+    ########## Calcular a variância explicada ##########
+    # Definir o número de componentes principais como o máximo possível
+    num_components = df_normalized.shape[1]
+
+    # Aplicar PCA com o número selecionado de componentes
+    pca_analise = PCA(n_components=num_components)
+    pca_result = pca_analise.fit_transform(df_normalized)
+
+    # Obter a variância explicada por cada componente
+    explained_variance = pca_analise.explained_variance_ratio_
+
+    # Calcular o acumulado da variância explicada
+    cumulative_variance = explained_variance.cumsum()
+
+    # Visualizar a variância explicada e acumulada em um gráfico de barras com linha
+    plt.figure(figsize=(10, 6))
+
+    # Gráfico de barras para a variância explicada
+    plt.bar(range(1, num_components + 1), explained_variance, alpha=0.7, label='Explained Variance', color='skyblue')
+
+    # Linha para a variância acumulada
+    plt.plot(range(1, num_components + 1), cumulative_variance, marker='o', color='orange', label='Cumulative Variance')
+
+    # Adicionar rótulos e título
+    plt.xlabel('Principal Components')
+    plt.ylabel('Variance Ratio')
+    plt.title('Explained and Cumulative Variance by PCA')
+    plt.xticks(range(1, num_components + 1))  # Ajustar os ticks do eixo x
+    plt.legend()
+    plt.grid()
+
+    # Exibir o gráfico
+    st.pyplot(plt)
+
+
+    ########################################################################################
+
     ####################### escolher k = 3 #######################
     # Fit KMeans with k
     # Add a slider to select the number of clusters (k)
@@ -757,54 +794,44 @@ with tab4:
 
     ############### Uso de PCAs ######################
 
-    # Apply PCA to reduce dimensionality to 2 components
-    pca = PCA(n_components=2)
+    # Adicionar um controle deslizante para selecionar o número de componentes principais
+    num_components = st.slider(
+        "Selecione o número de componentes principais (PCA):",
+        min_value=2,
+        max_value=3,
+        value=2,  # Valor inicial
+        step=1
+    )
+
+    # Apply PCA to reduce dimensionality
+    pca = PCA(n_components=num_components)
     df_pca = pca.fit_transform(df_normalized)
 
     # Fit KMeans with k on the PCA-reduced data
     kmeans_pca = KMeans(n_clusters=k, random_state=42)
     cluster_labels_pca = kmeans_pca.fit_predict(df_pca)
 
-    # Visualize the clusters in 2D
-    plt.figure(figsize=(8, 5))
-    plt.scatter(df_pca[:, 0], df_pca[:, 1], c=cluster_labels_pca, cmap='viridis', s=50)
-    plt.title(f'Clusters Visualization with PCA (k={k})')
-    plt.xlabel('Principal Component 1')
-    plt.ylabel('Principal Component 2')
-    plt.grid()
-    st.pyplot(plt)
+    # Visualize the clusters with PCA
+    if df_pca.shape[1] == 2:  # 2D plot for 2 PCAs
+        plt.figure(figsize=(8, 5))
+        plt.scatter(df_pca[:, 0], df_pca[:, 1], c=cluster_labels_pca, cmap='viridis', s=50)
+        plt.title(f'Clusters Visualization with PCA (k={k})')
+        plt.xlabel('Principal Component 1')
+        plt.ylabel('Principal Component 2')
+        plt.grid()
+        st.pyplot(plt)
 
-    ########## Calcular a variância explicada ##########
+    elif df_pca.shape[1] == 3:  # 3D plot for 3 PCAs
+        fig = plt.figure(figsize=(10, 7))
+        ax = fig.add_subplot(111, projection='3d')
+        scatter = ax.scatter(df_pca[:, 0], df_pca[:, 1], df_pca[:, 2], c=cluster_labels_pca, cmap='viridis', s=50)
+        ax.set_title(f'Clusters Visualization with PCA (k={k})')
+        ax.set_xlabel('Principal Component 1')
+        ax.set_ylabel('Principal Component 2')
+        ax.set_zlabel('Principal Component 3')
+        plt.colorbar(scatter, ax=ax, label='Cluster')
+        st.pyplot(fig)
 
-    # Aplicar PCA com 10 componentes
-    pca = PCA(n_components=10)
-    pca_result = pca.fit_transform(df_normalized)
-
-    # Obter a variância explicada por cada componente
-    explained_variance = pca.explained_variance_ratio_
-
-    # Calcular o acumulado da variância explicada
-    cumulative_variance = explained_variance.cumsum()
-
-    # Visualizar a variância explicada e acumulada em um gráfico de barras com linha
-    plt.figure(figsize=(10, 6))
-
-    # Gráfico de barras para a variância explicada
-    plt.bar(range(1, 11), explained_variance, alpha=0.7, label='Explained Variance', color='skyblue')
-
-    # Linha para a variância acumulada
-    plt.plot(range(1, 11), cumulative_variance, marker='o', color='orange', label='Cumulative Variance')
-
-    # Adicionar rótulos e título
-    plt.xlabel('Principal Components')
-    plt.ylabel('Variance Ratio')
-    plt.title('Explained and Cumulative Variance by PCA')
-    plt.xticks(range(1, 11))  # Ajustar os ticks do eixo x
-    plt.legend()
-    plt.grid()
-
-    # Exibir o gráfico
-    st.pyplot(plt)
 
     ########### Obter os pesos (loadings) dos PCAs ###########
     loadings = pd.DataFrame(pca.components_, columns=df_cluster.columns[:-1], index=[f'PCA{i+1}' for i in range(pca.n_components_)])
@@ -833,16 +860,6 @@ with tab4:
     plt.figure(figsize=(12, 8))
     sns.heatmap(correlations.iloc[:pca.n_components_, pca.n_components_:], annot=True, cmap='coolwarm', fmt=".2f")
     plt.title('Correlação entre PCAs e Variáveis Originais')
-    st.pyplot(plt)
-
-    #########  Visualizar os Dados nos Componentes Principais ##########
-    # Visualizar os dados nos dois primeiros PCAs
-    plt.figure(figsize=(8, 6))
-    plt.scatter(df_pca[:, 0], df_pca[:, 1], c=cluster_labels, cmap='viridis', s=50)
-    plt.xlabel('PCA1')
-    plt.ylabel('PCA2')
-    plt.title('Visualização dos Dados nos Componentes Principais')
-    plt.grid()
     st.pyplot(plt)
 
 with tab5:
