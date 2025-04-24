@@ -10,7 +10,59 @@ from preprocessamento import preprocess, translate_values
 from correlation_kendall_heatmap import calculate_kendall_correlations, plot_heatmap as plot_kendall_heatmap
 from correlation_spearman_heatmap import calculate_correlations, plot_heatmap as plot_spearman_heatmap
 from multiple_regression import perform_multiple_regression
-from teste_normalidade import normality_tests
+
+
+
+def create_df_brazil(df_translate):
+    """
+    Create a DataFrame for Brazil's education levels based on predefined probabilities.
+
+    Args:
+        df_translate (pd.DataFrame): The original dataset to determine the sample size.
+
+    Returns:
+        pd.DataFrame: A DataFrame with simulated education levels for Brazil.
+    """
+    # Define the probabilities for each education level
+    probabilities = [0.041, 0.475, 0.365, 0.119]
+
+    # Set sample_size to match the size of the original dataset
+    sample_size = len(df_translate)
+
+    # Calculate the exact number of occurrences for each level
+    counts = [int(sample_size * p) for p in probabilities]
+
+    # Adjust to ensure the sum matches the sample size
+    while sum(counts) < sample_size:
+        counts[counts.index(max(counts))] += 1
+    while sum(counts) > sample_size:
+        counts[counts.index(max(counts))] -= 1
+
+    # Create the list of education levels with exact proportions
+    education_levels = (
+        [1] * counts[0] +
+        [2] * counts[1] +
+        [3] * counts[2] +
+        [4] * counts[3]
+    )
+
+    # Shuffle the values to distribute them randomly
+    np.random.shuffle(education_levels)
+
+    # Create the DataFrame
+    df_brazil = pd.DataFrame({'EducationBrazil': education_levels})
+
+    # Mapear os valores para os rótulos descritivos
+    education_labels = {
+        1: "Sem escolaridade",
+        2: "Ensino fundamental",
+        3: "Ensino médio",
+        4: "Ensino superior"
+    }
+    df_brazil['EducationBrazil_Labels'] = df_brazil['EducationBrazil'].map(education_labels)
+
+    return df_brazil
+
 
 # Streamlit Interface
 st.set_page_config(page_title="Maternal and Infant Health Dashboard", layout="wide")
@@ -21,6 +73,10 @@ df = pd.read_csv('Dataset_maternal_mental_health_infant_sleep.csv', encoding='la
 # Preprocessing
 df = preprocess(df)
 df_translate = translate_values(df.copy())
+
+# Create DataFrame for Brazil's education levels
+df_brazil = create_df_brazil(df_translate)
+
 
 # Sidebar
 st.sidebar.header("Filters")
@@ -34,11 +90,21 @@ selected_education = st.sidebar.multiselect("Education",
                                             options=df_translate['Education'].unique(),
                                             default=df_translate['Education'].unique())
 
+# Adicionar filtro no sidebar para selecionar níveis de escolaridade
+selected_education_brazil = st.sidebar.multiselect(
+    "Education (Brazil Simulation)",
+    options=df_brazil['EducationBrazil_Labels'].unique(),
+    default=df_brazil['EducationBrazil_Labels'].unique()
+)
+
 # Apply filters
 filtered_df_translate = df_translate[
     (df_translate['Age'].between(age_range[0], age_range[1])) &
     (df_translate['Education'].isin(selected_education))
 ]
+
+# Filtrar o DataFrame com base na seleção
+filtered_df_brazil = df_brazil[df_brazil['EducationBrazil_Labels'].isin(selected_education_brazil)]
 
 # Main visualizations
 st.title("Maternal Mental Health and Infant Sleep Analysis")
@@ -386,26 +452,7 @@ with tab2:
     """)
 
 with tab3:
-    # Definir as probabilidades de cada nível de escolaridade
-    probabilities = [0.041, 0.475, 0.365, 0.119]
-
-    # Set sample_size to match the size of the original dataset
-    sample_size = len(filtered_df_translate)
-    education_levels = np.random.choice([1, 2, 3, 4], size=sample_size, p=probabilities)
-
-    # Criar o DataFrame
-    df_brasil = pd.DataFrame({'EducationBrazil': education_levels})
-
-    # Mapear os valores para os rótulos descritivos
-    education_labels = {
-        1: "Sem escolaridade",
-        2: "Ensino fundamental",
-        3: "Ensino médio",
-        4: "Ensino superior"
-    }
-    df_brasil['EducationBrazil_Labels'] = df_brasil['EducationBrazil'].map(education_labels)
-
-    # # Exibir o grafico da escolaridade no brasil # #
+    # # Exibir o grafico da escolaridade no brazil # #
 
     # Section: Distribution of Education Level and Brazilian Education Level
     st.header("Distribution of Education Levels")
@@ -501,105 +548,24 @@ with tab3:
 
     # Chart 2: Brazilian Education Distribution
     st.subheader("Brazilian Education Distribution")
-    education_counts_brazil = df_brasil['EducationBrazil_Labels'].value_counts().sort_index()
+    brazil_education_counts = filtered_df_brazil['EducationBrazil_Labels'].value_counts().sort_index()
 
-    fig2, ax2 = plt.subplots(figsize=(8, 6))
-    bars2 = ax2.bar(education_counts_brazil.index, education_counts_brazil.values, color=chart_colors)
+    fig1, ax1 = plt.subplots(figsize=(8, 6))
+    bars1 = ax1.bar(brazil_education_counts.index, brazil_education_counts.values, color=chart_colors)
 
-    ax2.set_xticks(range(len(education_counts_brazil.index)))
-    ax2.set_xticklabels(education_counts_brazil.index, rotation=0, ha='center')
+    ax1.set_xticks(brazil_education_counts.index)
+    ax1.set_xticklabels(brazil_education_counts.index, rotation=0, ha='center')
 
-    for bar in bars2:
+    for bar in bars1:
         yval = bar.get_height()
-        ax2.text(bar.get_x() + bar.get_width() / 2, yval + 0.1, int(yval), ha='center', va='bottom')
+        ax1.text(bar.get_x() + bar.get_width() / 2, yval + 0.1, round(yval, 2), ha='center', va='bottom')
 
-    ax2.set_xlabel('Education Level')
-    ax2.set_ylabel('Frequency')
-    ax2.legend(loc='best')
+    ax1.set_xlabel('Education')
+    ax1.set_ylabel('Frequency')
+    ax1.legend(loc='best')
 
     plt.tight_layout()
-    st.pyplot(fig2)
-
-    ## Simulation of EPDS_SCORE on brasil
-
-    # Ajustar os níveis de escolaridade do banco original para os níveis brasileiros
-    filtered_df_translate['EducationBrazil'] = filtered_df_translate['Education'].replace({
-        4: 4,  # 'UAS or UT Degree' -> 'Ensino superior'
-        5: 4   # 'University' -> 'Ensino superior'
-    })
-
-    # Simular os valores de EPDS_SCORE para o Brasil
-    # Mantendo as proporções do nível de escolaridade original
-    education_proportions = filtered_df_translate['EducationBrazil'].value_counts(normalize=True)
-    simulated_epds_scores = []
-
-    for education_level, proportion in education_proportions.items():
-        # Filtrar os EPDS_SCORE do nível de escolaridade correspondente
-        scores = filtered_df_translate.loc[filtered_df_translate['EducationBrazil'] == education_level, 'EPDS_SCORE']
-        # Simular os valores com base na proporção
-        simulated_scores = np.random.choice(scores, size=int(proportion * len(filtered_df_translate)), replace=True)
-        simulated_epds_scores.extend(simulated_scores)
-
-    # Criar DataFrame com os valores simulados
-    df_simulated = pd.DataFrame({'EPDS_SCORE': simulated_epds_scores})
-
-    # Contar os valores simulados de EPDS_SCORE
-    epds_score_counts_simulated = df_simulated['EPDS_SCORE'].value_counts().reset_index()
-    epds_score_counts_simulated.columns = ['EPDS_SCORE', 'count']
-
-    # Criar o gráfico
-    fig_epds_simulated = px.bar(
-        epds_score_counts_simulated,
-        x='EPDS_SCORE',
-        y='count',
-        color='EPDS_SCORE',
-        color_continuous_scale=chart_colors,  # Escala contínua
-        labels={'EPDS_SCORE': 'EPDS Score', 'count': 'Count'},
-        title='Simulated Distribution of EPDS Scores (Brazil)'
-    )
-
-    # Adicionar linha de referência no valor 12
-    fig_epds_simulated.add_shape(
-        type='line',
-        x0=12, x1=12, y0=0, y1=epds_score_counts_simulated['count'].max(),
-        line=dict(color='Red', width=2, dash='dash')
-    )
-
-    # Adicionar anotação para a linha de referência
-    fig_epds_simulated.add_annotation(
-        x=12, y=epds_score_counts_simulated['count'].max(),
-        text='EPDS Score = 12',
-        showarrow=True,
-        arrowhead=1,
-        ax=0,
-        ay=-40
-    )
-
-    # Calcular porcentagens
-    total_count_simulated = epds_score_counts_simulated['count'].sum()
-    below_12_count_simulated = epds_score_counts_simulated[epds_score_counts_simulated['EPDS_SCORE'] < 12]['count'].sum()
-    above_12_count_simulated = epds_score_counts_simulated[epds_score_counts_simulated['EPDS_SCORE'] >= 12]['count'].sum()
-
-    below_12_percentage_simulated = (below_12_count_simulated / total_count_simulated) * 100
-    above_12_percentage_simulated = (above_12_count_simulated / total_count_simulated) * 100
-
-    # Adicionar anotações para porcentagens
-    fig_epds_simulated.add_annotation(
-        x=6, y=epds_score_counts_simulated['count'].max() * 0.9,
-        text=f'Below 12: {below_12_percentage_simulated:.1f}%',
-        showarrow=False,
-        font=dict(size=12, color='Green')
-    )
-
-    fig_epds_simulated.add_annotation(
-        x=18, y=epds_score_counts_simulated['count'].max() * 0.9,
-        text=f'Above 12: {above_12_percentage_simulated:.1f}%',
-        showarrow=False,
-        font=dict(size=12, color='Red')
-    )
-
-    # Exibir o gráfico no Streamlit
-    st.plotly_chart(fig_epds_simulated, use_container_width=True)
+    st.pyplot(fig1)
 
 
 
@@ -622,3 +588,5 @@ with tab4:
 
     st.subheader("Multiple Linear Regression Analysis")
     perform_multiple_regression(df)
+
+
