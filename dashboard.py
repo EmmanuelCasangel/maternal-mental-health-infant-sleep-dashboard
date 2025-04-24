@@ -7,6 +7,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 from sklearn.decomposition import PCA
+import itertools
 from mpl_toolkits.mplot3d import Axes3D
 
 from preprocessamento import preprocess, translate_values
@@ -790,6 +791,37 @@ with tab4:
 
     # Add cluster labels to the DataFrame
     df_cluster['Cluster'] = cluster_labels
+
+
+    ###########
+
+    # Adicionar um expander para os gráficos de clusters sem uso de PCAS
+    with st.expander("Visualizar Gráficos de Clusters, sem PCAS", expanded=False):
+        # Iterar sobre todas as combinações de pares de colunas selecionadas
+        for col_x, col_y in itertools.combinations(colunas_interesse, 2):
+            plt.figure(figsize=(8, 6))
+
+            # Criar gráfico de dispersão
+            plt.scatter(
+                df_cluster[col_x],
+                df_cluster[col_y],
+                c=df_cluster['Cluster'],
+                cmap='viridis',
+                s=50,
+                alpha=0.7
+            )
+
+            # Adicionar rótulos e título
+            plt.xlabel(col_x)
+            plt.ylabel(col_y)
+            plt.title(f'Clusters: {col_x} vs {col_y}')
+            plt.colorbar(label='Cluster')
+            plt.grid()
+
+            # Exibir o gráfico
+            st.pyplot(plt)
+
+    ############
 
 
     ############### Uso de PCAs ######################
