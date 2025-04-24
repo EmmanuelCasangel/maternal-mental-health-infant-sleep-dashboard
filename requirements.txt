@@ -9,4 +9,4 @@ dcor
 sm
 sns
 numpy
-sklearn
+scikit-learn
