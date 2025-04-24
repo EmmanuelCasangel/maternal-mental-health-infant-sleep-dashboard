@@ -684,8 +684,7 @@ with tab4:
     todas_colunas = df.columns.tolist()
 
     # Definir as colunas padrão
-    colunas_padrao = ['EPDS_1', 'EPDS_2', 'EPDS_3', 'EPDS_4', 'EPDS_5',
-                      'EPDS_6', 'EPDS_7', 'EPDS_8', 'EPDS_9', 'EPDS_10']
+    colunas_padrao = ['how_falling_asleep_bb1', 'Sleep_hours']
 
     # Criar um seletor interativo no Streamlit
     colunas_interesse = st.multiselect(
