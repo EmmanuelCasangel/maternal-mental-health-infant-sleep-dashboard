@@ -678,9 +678,19 @@ with tab3:
     ############################################################################################################################################################################################################
 
 with tab4:
-    # Selecionar as colunas de interesse
-    colunas_epds = ['EPDS_1', 'EPDS_2', 'EPDS_3', 'EPDS_4', 'EPDS_5', 'EPDS_6', 'EPDS_7', 'EPDS_8', 'EPDS_9', 'EPDS_10']
-    colunas_interesse = colunas_epds + ['Education', 'Sleep_hours']
+    # Obter todas as colunas do DataFrame
+    todas_colunas = df.columns.tolist()
+
+    # Definir as colunas padrão
+    colunas_padrao = ['EPDS_1', 'EPDS_2', 'EPDS_3', 'EPDS_4', 'EPDS_5',
+                      'EPDS_6', 'EPDS_7', 'EPDS_8', 'EPDS_9', 'EPDS_10']
+
+    # Criar um seletor interativo no Streamlit
+    colunas_interesse = st.multiselect(
+        "Selecione as colunas de interesse:",
+        options=todas_colunas,  # Todas as colunas disponíveis
+        default=colunas_padrao  # Colunas padrão selecionadas inicialmente
+    )
 
     # Filtrar o DataFrame
     df_cluster = df[colunas_interesse].dropna()
