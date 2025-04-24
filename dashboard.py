@@ -744,8 +744,11 @@ with tab4:
     st.pyplot(plt)
 
     ####################### escolher k = 3 #######################
-    # Fit KMeans with k=3
-    kmeans = KMeans(n_clusters=3, random_state=42)
+    # Fit KMeans with k
+    # Add a slider to select the number of clusters (k)
+    k = st.slider("Select the number of clusters (k):", min_value=2, max_value=10, value=5, step=1)
+
+    kmeans = KMeans(n_clusters=k, random_state=42)
     cluster_labels = kmeans.fit_predict(df_normalized)
 
     # Add cluster labels to the DataFrame
@@ -758,37 +761,50 @@ with tab4:
     pca = PCA(n_components=2)
     df_pca = pca.fit_transform(df_normalized)
 
-    # Fit KMeans with k=3 on the PCA-reduced data
-    kmeans_pca = KMeans(n_clusters=3, random_state=42)
+    # Fit KMeans with k on the PCA-reduced data
+    kmeans_pca = KMeans(n_clusters=k, random_state=42)
     cluster_labels_pca = kmeans_pca.fit_predict(df_pca)
 
     # Visualize the clusters in 2D
     plt.figure(figsize=(8, 5))
     plt.scatter(df_pca[:, 0], df_pca[:, 1], c=cluster_labels_pca, cmap='viridis', s=50)
-    plt.title('Clusters Visualization with PCA (k=3)')
+    plt.title(f'Clusters Visualization with PCA (k={k})')
     plt.xlabel('Principal Component 1')
     plt.ylabel('Principal Component 2')
     plt.grid()
     st.pyplot(plt)
 
     ########## Calcular a variância explicada ##########
+
+    # Aplicar PCA com 10 componentes
+    pca = PCA(n_components=10)
+    pca_result = pca.fit_transform(df_normalized)
+
+    # Obter a variância explicada por cada componente
     explained_variance = pca.explained_variance_ratio_
 
-    # Exibir a variância explicada por cada componente
-    for i, var in enumerate(explained_variance):
-        print(f"Componente {i + 1}: {var:.2%} da variância explicada")
+    # Calcular o acumulado da variância explicada
+    cumulative_variance = explained_variance.cumsum()
 
-    # Visualizar a variância explicada acumulada
-    import matplotlib.pyplot as plt
+    # Visualizar a variância explicada e acumulada em um gráfico de barras com linha
+    plt.figure(figsize=(10, 6))
 
-    plt.figure(figsize=(8, 5))
-    plt.plot(range(1, len(explained_variance) + 1), explained_variance.cumsum(), marker='o', linestyle='--')
-    plt.xlabel('Número de Componentes Principais')
-    plt.ylabel('Variância Explicada Acumulada')
-    plt.title('Variância Explicada pelos PCAs')
+    # Gráfico de barras para a variância explicada
+    plt.bar(range(1, 11), explained_variance, alpha=0.7, label='Explained Variance', color='skyblue')
+
+    # Linha para a variância acumulada
+    plt.plot(range(1, 11), cumulative_variance, marker='o', color='orange', label='Cumulative Variance')
+
+    # Adicionar rótulos e título
+    plt.xlabel('Principal Components')
+    plt.ylabel('Variance Ratio')
+    plt.title('Explained and Cumulative Variance by PCA')
+    plt.xticks(range(1, 11))  # Ajustar os ticks do eixo x
+    plt.legend()
     plt.grid()
-    st.pyplot(plt)
 
+    # Exibir o gráfico
+    st.pyplot(plt)
 
     ########### Obter os pesos (loadings) dos PCAs ###########
     loadings = pd.DataFrame(pca.components_, columns=df_cluster.columns[:-1], index=[f'PCA{i+1}' for i in range(pca.n_components_)])
