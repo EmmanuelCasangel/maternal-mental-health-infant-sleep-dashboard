@@ -11,7 +11,14 @@ from correlation_kendall_heatmap import calculate_kendall_correlations, plot_hea
 from correlation_spearman_heatmap import calculate_correlations, plot_heatmap as plot_spearman_heatmap
 from multiple_regression import perform_multiple_regression
 
-
+# Criar uma nova coluna com valores aleatórios baseados na média e desvio padrão
+def generate_epds_scores(row, stats):
+    # Filter the mean and standard deviation for the corresponding education category
+    education_row = stats[stats['Education'] == row['EducationBrazil']]
+    mean = education_row['Mean_EPDS_SCORE'].values[0]
+    std = education_row['Std_EPDS_SCORE'].values[0]
+    # Generate a random value based on the mean and standard deviation, ensuring it is between 0 and 30, and round to an integer
+    return int(round(min(30, max(0, np.random.normal(loc=mean, scale=std)))))
 
 def create_df_brazil(df_translate):
     """
@@ -349,7 +356,7 @@ with tab1:
         x='EPDS_SCORE',
         y='count',
         color='EPDS_SCORE',
-        color_continuous_scale=chart_colors,  # Escala contínua
+        color_continuous_scale=chart_colors[::-1],  # Escala contínua
         labels={'EPDS_SCORE': 'EPDS Score', 'count': 'Count'},
         title='Distribution of EPDS Scores'
     )
@@ -461,7 +468,7 @@ with tab3:
     st.subheader("Original Education Distribution")
     education_counts = filtered_df_translate['Education'].value_counts().sort_index()
 
-    fig1, ax1 = plt.subplots(figsize=(8, 6))
+    fig1, ax1 = plt.subplots(figsize=(12, 8))
     bars1 = ax1.bar(education_counts.index, education_counts.values, color=chart_colors)
 
     ax1.set_xticks(education_counts.index)
@@ -493,7 +500,7 @@ with tab3:
         x='EPDS_SCORE',
         y='count',
         color='EPDS_SCORE',
-        color_continuous_scale=chart_colors,  # Escala contínua
+        color_continuous_scale=chart_colors[::-1],  # Escala contínua
         labels={'EPDS_SCORE': 'EPDS Score', 'count': 'Count'},
         title='Original Distribution of EPDS Scores'
     )
@@ -550,7 +557,7 @@ with tab3:
     st.subheader("Brazilian Education Distribution")
     brazil_education_counts = filtered_df_brazil['EducationBrazil_Labels'].value_counts().sort_index()
 
-    fig1, ax1 = plt.subplots(figsize=(8, 6))
+    fig1, ax1 = plt.subplots(figsize=(12, 8))
     bars1 = ax1.bar(brazil_education_counts.index, brazil_education_counts.values, color=chart_colors)
 
     ax1.set_xticks(brazil_education_counts.index)
@@ -567,8 +574,96 @@ with tab3:
     plt.tight_layout()
     st.pyplot(fig1)
 
+    ############################################################################################################################################################################################################
 
+    # Simulação do EPDS_SCORE para o Brasil
+    st.header("Simulated Distribution of EPDS Scores for Brazil")
 
+    # Combine categories 4 and 5 into a single category
+    df['Education_University_Grouped'] = df['Education'].replace(
+        5, 4)
+
+    # Calculate mean and standard deviation for each education category
+    education_stats = df.groupby('Education_University_Grouped')['EPDS_SCORE'].agg(
+        ['mean', 'std']).reset_index()
+
+    # Rename columns for clarity
+    education_stats.columns = ['Education', 'Mean_EPDS_SCORE', 'Std_EPDS_SCORE']
+
+    # Aplicar a função para gerar os valores
+    filtered_df_brazil['EPDS_SCORE_BRAZIL'] = filtered_df_brazil.apply(
+        generate_epds_scores, axis=1, stats=education_stats
+    )
+
+    # Display the result
+    education_stats
+
+    #----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
+
+    # Simulated Distribution of EPDS Scores for Brazil
+    st.header("Simulated Distribution of EPDS Scores for Brazil")
+
+    # Count the frequency of EPDS_SCORE_BRAZIL
+    epds_score_counts_brazil = filtered_df_brazil['EPDS_SCORE_BRAZIL'].value_counts().reset_index()
+    epds_score_counts_brazil.columns = ['EPDS_SCORE_BRAZIL', 'count']
+
+    # Create the bar chart
+    fig_epds_brazil = px.bar(
+        epds_score_counts_brazil,
+        x='EPDS_SCORE_BRAZIL',
+        y='count',
+        color='EPDS_SCORE_BRAZIL',
+        color_continuous_scale=chart_colors[::-1],  # Reverse color scale
+        labels={'EPDS_SCORE_BRAZIL': 'EPDS Score (Brazil)', 'count': 'Count'},
+        title='Simulated Distribution of EPDS Scores for Brazil'
+    )
+
+    # Add reference line at value 12
+    fig_epds_brazil.add_shape(
+        type='line',
+        x0=12, x1=12, y0=0, y1=epds_score_counts_brazil['count'].max(),
+        line=dict(color='Red', width=2, dash='dash')
+    )
+
+    # Add annotation for the reference line
+    fig_epds_brazil.add_annotation(
+        x=12, y=epds_score_counts_brazil['count'].max(),
+        text='EPDS Score = 12',
+        showarrow=True,
+        arrowhead=1,
+        ax=0,
+        ay=-40
+    )
+
+    # Calculate percentages
+    total_count_brazil = epds_score_counts_brazil['count'].sum()
+    below_12_count_brazil = epds_score_counts_brazil[epds_score_counts_brazil['EPDS_SCORE_BRAZIL'] < 12]['count'].sum()
+    above_12_count_brazil = epds_score_counts_brazil[epds_score_counts_brazil['EPDS_SCORE_BRAZIL'] >= 12]['count'].sum()
+
+    below_12_percentage_brazil = (below_12_count_brazil / total_count_brazil) * 100
+    above_12_percentage_brazil = (above_12_count_brazil / total_count_brazil) * 100
+
+    # Add annotations for percentages
+    fig_epds_brazil.add_annotation(
+        x=6, y=epds_score_counts_brazil['count'].max() * 0.9,
+        text=f'Below 12: {below_12_percentage_brazil:.1f}%',
+        showarrow=False,
+        font=dict(size=12, color='Green')
+    )
+
+    fig_epds_brazil.add_annotation(
+        x=18, y=epds_score_counts_brazil['count'].max() * 0.9,
+        text=f'Above 12: {above_12_percentage_brazil:.1f}%',
+        showarrow=False,
+        font=dict(size=12, color='Red')
+    )
+
+    # Display the chart in Streamlit
+    st.plotly_chart(fig_epds_brazil, use_container_width=True)
+
+    #----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
+
+    ############################################################################################################################################################################################################
 
 with tab4:
     cols = [
