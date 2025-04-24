@@ -576,9 +576,6 @@ with tab3:
 
     ############################################################################################################################################################################################################
 
-    # Simulação do EPDS_SCORE para o Brasil
-    st.header("Simulated Distribution of EPDS Scores for Brazil")
-
     # Combine categories 4 and 5 into a single category
     df['Education_University_Grouped'] = df['Education'].replace(
         5, 4)
@@ -594,9 +591,6 @@ with tab3:
     filtered_df_brazil['EPDS_SCORE_BRAZIL'] = filtered_df_brazil.apply(
         generate_epds_scores, axis=1, stats=education_stats
     )
-
-    # Display the result
-    education_stats
 
     #----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 
@@ -662,6 +656,29 @@ with tab3:
     st.plotly_chart(fig_epds_brazil, use_container_width=True)
 
     #----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
+
+    # Map for Brazilian Labels
+    brazilian_labels_map = {
+        1: "Sem escolaridade",
+        2: "Ensino fundamental",
+        3: "Ensino médio",
+        4: "Ensino superior"
+    }
+
+    # Map for Original Labels
+    original_labels_map = {
+        1: "No education",
+        2: "Compulsory school",
+        3: "Post-compulsory education",
+        4: "UAS or UT Degree + University",
+    }
+
+    # Add the new columns to the DataFrame
+    education_stats['Brazilian Labels'] = education_stats['Education'].map(brazilian_labels_map)
+    education_stats['Original Labels'] = education_stats['Education'].map(original_labels_map)
+
+    # Display the updated DataFrame
+    st.write(education_stats)
 
     ############################################################################################################################################################################################################
 
