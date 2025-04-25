@@ -638,79 +638,54 @@ with tab3:
         fig = go.Figure()
 
         # Add scatter points for clusters
-
         fig.add_trace(go.Scatter3d(
-
             x=df_pca[:, 0],
-
             y=df_pca[:, 1],
-
             z=df_pca[:, 2],
-
             mode='markers',
-
             marker=dict(
-
                 size=5,
-
                 color=cluster_labels_pca,  # Color by cluster
-
                 colorscale='Viridis',
-
                 opacity=0.8
-
             ),
-
             name='Clusters'
-
         ))
 
-        # Add variable vectors (loadings)
-
+        # Add variable vectors (loadings) with arrows
         for i, (x, y, z) in enumerate(pca.components_.T):  # Transpose to iterate over variables
-
+            # Add a line for the vector
             fig.add_trace(go.Scatter3d(
-
                 x=[0, x],
-
                 y=[0, y],
-
                 z=[0, z],
-
-                mode='lines+text',
-
-                line=dict(color='red', width=2),
-
-                text=[None, df_cluster.columns[i]],  # Add variable names
-
-                textposition='top center',
-
+                mode='lines',
+                line=dict(color='red', width=4),
                 name=f'Variable: {df_cluster.columns[i]}'
-
+            ))
+            # Add a cone for the arrowhead
+            fig.add_trace(go.Cone(
+                x=[x], y=[y], z=[z],
+                u=[x], v=[y], w=[z],
+                colorscale=[[0, 'red'], [1, 'red']],
+                sizemode="absolute",
+                sizeref=0.2,  # Adjust the size of the arrowhead
+                anchor="tip",
+                showscale=False
             ))
 
         # Update layout for better visualization
-
         fig.update_layout(
-
             title=f'Clusters Visualization with PCA (k={k})',
-
             scene=dict(
-
                 xaxis_title='Principal Component 1',
-
                 yaxis_title='Principal Component 2',
-
                 zaxis_title='Principal Component 3'
-
             ),
-
             margin=dict(l=0, r=0, b=0, t=40)
-
         )
 
         # Display the interactive plot in Streamlit
-
         st.plotly_chart(fig, use_container_width=True)
 
 
