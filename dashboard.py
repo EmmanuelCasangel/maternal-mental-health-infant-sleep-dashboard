@@ -8,7 +8,7 @@ from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 from sklearn.decomposition import PCA
 import itertools
-from mpl_toolkits.mplot3d import Axes3D
+import plotly.graph_objects as go
 
 from preprocessamento import preprocess, translate_values
 from correlation_kendall_heatmap import calculate_kendall_correlations, plot_heatmap as plot_kendall_heatmap
@@ -634,21 +634,84 @@ with tab3:
         st.pyplot(plt)
 
     elif df_pca.shape[1] == 3:  # 3D plot for 3 PCAs
-        fig = plt.figure(figsize=(10, 7))
-        ax = fig.add_subplot(111, projection='3d')
-        scatter = ax.scatter(df_pca[:, 0], df_pca[:, 1], df_pca[:, 2], c=cluster_labels_pca, cmap='viridis', s=50)
-        ax.set_title(f'Clusters Visualization with PCA (k={k})')
-        ax.set_xlabel('Principal Component 1')
-        ax.set_ylabel('Principal Component 2')
-        ax.set_zlabel('Principal Component 3')
-        plt.colorbar(scatter, ax=ax, label='Cluster')
+
+        fig = go.Figure()
+
+        # Add scatter points for clusters
+
+        fig.add_trace(go.Scatter3d(
+
+            x=df_pca[:, 0],
+
+            y=df_pca[:, 1],
+
+            z=df_pca[:, 2],
+
+            mode='markers',
+
+            marker=dict(
+
+                size=5,
+
+                color=cluster_labels_pca,  # Color by cluster
+
+                colorscale='Viridis',
+
+                opacity=0.8
+
+            ),
+
+            name='Clusters'
+
+        ))
 
         # Add variable vectors (loadings)
-        for i, (x, y, z) in enumerate(pca.components_.T):  # Transpose to iterate over variables
-            ax.quiver(0, 0, 0, x, y, z, color='red', alpha=0.5)
-            ax.text(x * 1.1, y * 1.1, z * 1.1, df_cluster.columns[i], color='red', fontsize=10)
 
-        st.pyplot(fig)
+        for i, (x, y, z) in enumerate(pca.components_.T):  # Transpose to iterate over variables
+
+            fig.add_trace(go.Scatter3d(
+
+                x=[0, x],
+
+                y=[0, y],
+
+                z=[0, z],
+
+                mode='lines+text',
+
+                line=dict(color='red', width=2),
+
+                text=[None, df_cluster.columns[i]],  # Add variable names
+
+                textposition='top center',
+
+                name=f'Variable: {df_cluster.columns[i]}'
+
+            ))
+
+        # Update layout for better visualization
+
+        fig.update_layout(
+
+            title=f'Clusters Visualization with PCA (k={k})',
+
+            scene=dict(
+
+                xaxis_title='Principal Component 1',
+
+                yaxis_title='Principal Component 2',
+
+                zaxis_title='Principal Component 3'
+
+            ),
+
+            margin=dict(l=0, r=0, b=0, t=40)
+
+        )
+
+        # Display the interactive plot in Streamlit
+
+        st.plotly_chart(fig, use_container_width=True)
 
 
     ########### Obter os pesos (loadings) dos PCAs ###########
