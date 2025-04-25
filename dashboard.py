@@ -123,7 +123,7 @@ st.title("Maternal Mental Health and Infant Sleep Analysis")
 
 # Charts
 st.subheader("")
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["Descriptive Analysis", "Factors Associated with Postpartum Depression (EPDS_SCORE)", "Simulation", "Clusters", "Analyses and Tool"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["Descriptive Analysis", "Factors Associated with Postpartum Depression (EPDS_SCORE)", "Clusters", "Simulation", "Analyses and Tool"])
 
 with tab1:
     st.header("Distribution of Maternal Age")
@@ -400,7 +400,6 @@ with tab1:
 
     st.plotly_chart(fig_epds, use_container_width=True)
 
-
 with tab2:
     st.title("Factors Associated with Postpartum Depression (EPDS_SCORE)")
 
@@ -456,6 +455,232 @@ with tab2:
     """)
 
 with tab3:
+    # Obter todas as colunas do DataFrame
+    todas_colunas = df.columns.tolist()
+
+    # Definir as colunas padrão
+    colunas_padrao = ['how_falling_asleep_bb1', 'Sleep_hours']
+
+    # Criar um seletor interativo no Streamlit
+    colunas_interesse = st.multiselect(
+        "Selecione as colunas de interesse:",
+        options=todas_colunas,  # Todas as colunas disponíveis
+        default=colunas_padrao  # Colunas padrão selecionadas inicialmente
+    )
+
+    # Filtrar o DataFrame
+    df_cluster = df[colunas_interesse].dropna()
+
+
+    # Normalizar os dados
+    scaler = StandardScaler()
+    df_normalized = scaler.fit_transform(df_cluster)
+
+    # Método do cotovelo
+    inertia = []
+    k_range = range(1, 11)  # Testar de 1 a 10 clusters
+
+    for k in k_range:
+        kmeans = KMeans(n_clusters=k, random_state=42)
+        kmeans.fit(df_normalized)
+        inertia.append(kmeans.inertia_)
+
+    # Plot the elbow method graph
+    plt.figure(figsize=(8, 5))
+    plt.plot(k_range, inertia, marker='o', linestyle='--')
+    plt.xlabel('Número de Clusters (k)')
+    plt.ylabel('Inércia')
+    plt.title('Método do Cotovelo')
+    plt.grid()
+
+    # Use st.pyplot() to display the plot in Streamlit
+    st.pyplot(plt)
+
+
+    # Calculate Silhouette Scores for different numbers of clusters
+    silhouette_scores = []
+
+    for k in range(2, 11):  # Silhouette Score requires at least 2 clusters
+        kmeans = KMeans(n_clusters=k, random_state=42)
+        cluster_labels = kmeans.fit_predict(df_normalized)
+        score = silhouette_score(df_normalized, cluster_labels)
+        silhouette_scores.append(score)
+
+    # Plot the Silhouette Scores
+    plt.figure(figsize=(8, 5))
+    plt.plot(range(2, 11), silhouette_scores, marker='o', linestyle='--')
+    plt.xlabel('Number of Clusters (k)')
+    plt.ylabel('Silhouette Score')
+    plt.title('Silhouette Score for Different Numbers of Clusters')
+    plt.grid()
+    st.pyplot(plt)
+
+
+    ############ Analise do numero de componentes ideal PCAS #############################
+
+    ########## Calcular a variância explicada ##########
+    # Definir o número de componentes principais como o máximo possível
+    num_components = df_normalized.shape[1]
+
+    # Aplicar PCA com o número selecionado de componentes
+    pca_analise = PCA(n_components=num_components)
+    pca_result = pca_analise.fit_transform(df_normalized)
+
+    # Obter a variância explicada por cada componente
+    explained_variance = pca_analise.explained_variance_ratio_
+
+    # Calcular o acumulado da variância explicada
+    cumulative_variance = explained_variance.cumsum()
+
+    # Visualizar a variância explicada e acumulada em um gráfico de barras com linha
+    plt.figure(figsize=(10, 6))
+
+    # Gráfico de barras para a variância explicada
+    plt.bar(range(1, num_components + 1), explained_variance, alpha=0.7, label='Explained Variance', color='skyblue')
+
+    # Linha para a variância acumulada
+    plt.plot(range(1, num_components + 1), cumulative_variance, marker='o', color='orange', label='Cumulative Variance')
+
+    # Adicionar rótulos e título
+    plt.xlabel('Principal Components')
+    plt.ylabel('Variance Ratio')
+    plt.title('Explained and Cumulative Variance by PCA')
+    plt.xticks(range(1, num_components + 1))  # Ajustar os ticks do eixo x
+    plt.legend()
+    plt.grid()
+
+    # Exibir o gráfico
+    st.pyplot(plt)
+
+
+    ########################################################################################
+
+    ####################### escolher k = 3 #######################
+    # Fit KMeans with k
+    # Add a slider to select the number of clusters (k)
+    k = st.slider("Select the number of clusters (k):", min_value=2, max_value=10, value=5, step=1)
+
+    kmeans = KMeans(n_clusters=k, random_state=42)
+    cluster_labels = kmeans.fit_predict(df_normalized)
+
+    # Add cluster labels to the DataFrame
+    df_cluster['Cluster'] = cluster_labels
+
+
+    ###########
+
+    # Adicionar um expander para os gráficos de clusters sem uso de PCAS
+    with st.expander("Visualizar Gráficos de Clusters, sem PCAS", expanded=False):
+        # Iterar sobre todas as combinações de pares de colunas selecionadas
+        for col_x, col_y in itertools.combinations(colunas_interesse, 2):
+            plt.figure(figsize=(8, 6))
+
+            # Criar gráfico de dispersão
+            plt.scatter(
+                df_cluster[col_x],
+                df_cluster[col_y],
+                c=df_cluster['Cluster'],
+                cmap='viridis',
+                s=50,
+                alpha=0.7
+            )
+
+            # Adicionar rótulos e título
+            plt.xlabel(col_x)
+            plt.ylabel(col_y)
+            plt.title(f'Clusters: {col_x} vs {col_y}')
+            plt.colorbar(label='Cluster')
+            plt.grid()
+
+            # Exibir o gráfico
+            st.pyplot(plt)
+
+    ############
+
+
+    ############### Uso de PCAs ######################
+
+    # Adicionar um controle deslizante para selecionar o número de componentes principais
+    num_components = st.slider(
+        "Selecione o número de componentes principais (PCA):",
+        min_value=2,
+        max_value=3,
+        value=2,  # Valor inicial
+        step=1
+    )
+
+    # Apply PCA to reduce dimensionality
+    pca = PCA(n_components=num_components)
+    df_pca = pca.fit_transform(df_normalized)
+
+    # Fit KMeans with k on the PCA-reduced data
+    kmeans_pca = KMeans(n_clusters=k, random_state=42)
+    cluster_labels_pca = kmeans_pca.fit_predict(df_pca)
+
+    # Visualize the clusters with PCA and add variable vectors
+    if df_pca.shape[1] == 2:  # 2D plot for 2 PCAs
+        plt.figure(figsize=(8, 5))
+        plt.scatter(df_pca[:, 0], df_pca[:, 1], c=cluster_labels_pca, cmap='viridis', s=50)
+        plt.title(f'Clusters Visualization with PCA (k={k})')
+        plt.xlabel('Principal Component 1')
+        plt.ylabel('Principal Component 2')
+        plt.grid()
+
+        # Add variable vectors (loadings)
+        for i, (x, y) in enumerate(pca.components_.T):  # Transpose to iterate over variables
+            plt.arrow(0, 0, x, y, color='red', alpha=0.5, head_width=0.05)
+            plt.text(x * 1.1, y * 1.1, df_cluster.columns[i], color='red', fontsize=10)
+
+        st.pyplot(plt)
+
+    elif df_pca.shape[1] == 3:  # 3D plot for 3 PCAs
+        fig = plt.figure(figsize=(10, 7))
+        ax = fig.add_subplot(111, projection='3d')
+        scatter = ax.scatter(df_pca[:, 0], df_pca[:, 1], df_pca[:, 2], c=cluster_labels_pca, cmap='viridis', s=50)
+        ax.set_title(f'Clusters Visualization with PCA (k={k})')
+        ax.set_xlabel('Principal Component 1')
+        ax.set_ylabel('Principal Component 2')
+        ax.set_zlabel('Principal Component 3')
+        plt.colorbar(scatter, ax=ax, label='Cluster')
+
+        # Add variable vectors (loadings)
+        for i, (x, y, z) in enumerate(pca.components_.T):  # Transpose to iterate over variables
+            ax.quiver(0, 0, 0, x, y, z, color='red', alpha=0.5)
+            ax.text(x * 1.1, y * 1.1, z * 1.1, df_cluster.columns[i], color='red', fontsize=10)
+
+        st.pyplot(fig)
+
+
+    ########### Obter os pesos (loadings) dos PCAs ###########
+    loadings = pd.DataFrame(pca.components_, columns=df_cluster.columns[:-1], index=[f'PCA{i+1}' for i in range(pca.n_components_)])
+
+    # Exibir os pesos
+    print(loadings)
+
+    # Visualizar os pesos como um heatmap
+    import seaborn as sns
+
+    plt.figure(figsize=(10, 6))
+    sns.heatmap(loadings, annot=True, cmap='coolwarm', fmt=".2f")
+    plt.title('Pesos (Loadings) dos PCAs')
+    st.pyplot(plt)
+
+
+    ########## Relacionar os PCAs com as Variáveis Originais ##########
+    # Adicionar os PCAs ao DataFrame original
+    pca_df = pd.DataFrame(df_pca, columns=[f'PCA{i + 1}' for i in range(pca.n_components_)])
+    pca_df = pd.concat([pca_df, df_cluster.reset_index(drop=True)], axis=1)
+
+    # Calcular correlações
+    correlations = pca_df.corr()
+
+    # Visualizar as correlações dos PCAs com as variáveis originais
+    plt.figure(figsize=(12, 8))
+    sns.heatmap(correlations.iloc[:pca.n_components_, pca.n_components_:], annot=True, cmap='coolwarm', fmt=".2f")
+    plt.title('Correlação entre PCAs e Variáveis Originais')
+    st.pyplot(plt)
+
+with tab4:
     # # Exibir o grafico da escolaridade no brazil # #
 
     # Section: Distribution of Education Level and Brazilian Education Level
@@ -677,221 +902,7 @@ with tab3:
     # Display the updated DataFrame
     st.write(education_stats)
 
-    ############################################################################################################################################################################################################
-
-with tab4:
-    # Obter todas as colunas do DataFrame
-    todas_colunas = df.columns.tolist()
-
-    # Definir as colunas padrão
-    colunas_padrao = ['how_falling_asleep_bb1', 'Sleep_hours']
-
-    # Criar um seletor interativo no Streamlit
-    colunas_interesse = st.multiselect(
-        "Selecione as colunas de interesse:",
-        options=todas_colunas,  # Todas as colunas disponíveis
-        default=colunas_padrao  # Colunas padrão selecionadas inicialmente
-    )
-
-    # Filtrar o DataFrame
-    df_cluster = df[colunas_interesse].dropna()
-
-
-    # Normalizar os dados
-    scaler = StandardScaler()
-    df_normalized = scaler.fit_transform(df_cluster)
-
-    # Método do cotovelo
-    inertia = []
-    k_range = range(1, 11)  # Testar de 1 a 10 clusters
-
-    for k in k_range:
-        kmeans = KMeans(n_clusters=k, random_state=42)
-        kmeans.fit(df_normalized)
-        inertia.append(kmeans.inertia_)
-
-    # Plot the elbow method graph
-    plt.figure(figsize=(8, 5))
-    plt.plot(k_range, inertia, marker='o', linestyle='--')
-    plt.xlabel('Número de Clusters (k)')
-    plt.ylabel('Inércia')
-    plt.title('Método do Cotovelo')
-    plt.grid()
-
-    # Use st.pyplot() to display the plot in Streamlit
-    st.pyplot(plt)
-
-
-    # Calculate Silhouette Scores for different numbers of clusters
-    silhouette_scores = []
-
-    for k in range(2, 11):  # Silhouette Score requires at least 2 clusters
-        kmeans = KMeans(n_clusters=k, random_state=42)
-        cluster_labels = kmeans.fit_predict(df_normalized)
-        score = silhouette_score(df_normalized, cluster_labels)
-        silhouette_scores.append(score)
-
-    # Plot the Silhouette Scores
-    plt.figure(figsize=(8, 5))
-    plt.plot(range(2, 11), silhouette_scores, marker='o', linestyle='--')
-    plt.xlabel('Number of Clusters (k)')
-    plt.ylabel('Silhouette Score')
-    plt.title('Silhouette Score for Different Numbers of Clusters')
-    plt.grid()
-    st.pyplot(plt)
-
-
-    ############ Analise do numero de componentes ideal PCAS #############################
-
-    ########## Calcular a variância explicada ##########
-    # Definir o número de componentes principais como o máximo possível
-    num_components = df_normalized.shape[1]
-
-    # Aplicar PCA com o número selecionado de componentes
-    pca_analise = PCA(n_components=num_components)
-    pca_result = pca_analise.fit_transform(df_normalized)
-
-    # Obter a variância explicada por cada componente
-    explained_variance = pca_analise.explained_variance_ratio_
-
-    # Calcular o acumulado da variância explicada
-    cumulative_variance = explained_variance.cumsum()
-
-    # Visualizar a variância explicada e acumulada em um gráfico de barras com linha
-    plt.figure(figsize=(10, 6))
-
-    # Gráfico de barras para a variância explicada
-    plt.bar(range(1, num_components + 1), explained_variance, alpha=0.7, label='Explained Variance', color='skyblue')
-
-    # Linha para a variância acumulada
-    plt.plot(range(1, num_components + 1), cumulative_variance, marker='o', color='orange', label='Cumulative Variance')
-
-    # Adicionar rótulos e título
-    plt.xlabel('Principal Components')
-    plt.ylabel('Variance Ratio')
-    plt.title('Explained and Cumulative Variance by PCA')
-    plt.xticks(range(1, num_components + 1))  # Ajustar os ticks do eixo x
-    plt.legend()
-    plt.grid()
-
-    # Exibir o gráfico
-    st.pyplot(plt)
-
-
-    ########################################################################################
-
-    ####################### escolher k = 3 #######################
-    # Fit KMeans with k
-    # Add a slider to select the number of clusters (k)
-    k = st.slider("Select the number of clusters (k):", min_value=2, max_value=10, value=5, step=1)
-
-    kmeans = KMeans(n_clusters=k, random_state=42)
-    cluster_labels = kmeans.fit_predict(df_normalized)
-
-    # Add cluster labels to the DataFrame
-    df_cluster['Cluster'] = cluster_labels
-
-
-    ###########
-
-    # Adicionar um expander para os gráficos de clusters sem uso de PCAS
-    with st.expander("Visualizar Gráficos de Clusters, sem PCAS", expanded=False):
-        # Iterar sobre todas as combinações de pares de colunas selecionadas
-        for col_x, col_y in itertools.combinations(colunas_interesse, 2):
-            plt.figure(figsize=(8, 6))
-
-            # Criar gráfico de dispersão
-            plt.scatter(
-                df_cluster[col_x],
-                df_cluster[col_y],
-                c=df_cluster['Cluster'],
-                cmap='viridis',
-                s=50,
-                alpha=0.7
-            )
-
-            # Adicionar rótulos e título
-            plt.xlabel(col_x)
-            plt.ylabel(col_y)
-            plt.title(f'Clusters: {col_x} vs {col_y}')
-            plt.colorbar(label='Cluster')
-            plt.grid()
-
-            # Exibir o gráfico
-            st.pyplot(plt)
-
-    ############
-
-
-    ############### Uso de PCAs ######################
-
-    # Adicionar um controle deslizante para selecionar o número de componentes principais
-    num_components = st.slider(
-        "Selecione o número de componentes principais (PCA):",
-        min_value=2,
-        max_value=3,
-        value=2,  # Valor inicial
-        step=1
-    )
-
-    # Apply PCA to reduce dimensionality
-    pca = PCA(n_components=num_components)
-    df_pca = pca.fit_transform(df_normalized)
-
-    # Fit KMeans with k on the PCA-reduced data
-    kmeans_pca = KMeans(n_clusters=k, random_state=42)
-    cluster_labels_pca = kmeans_pca.fit_predict(df_pca)
-
-    # Visualize the clusters with PCA
-    if df_pca.shape[1] == 2:  # 2D plot for 2 PCAs
-        plt.figure(figsize=(8, 5))
-        plt.scatter(df_pca[:, 0], df_pca[:, 1], c=cluster_labels_pca, cmap='viridis', s=50)
-        plt.title(f'Clusters Visualization with PCA (k={k})')
-        plt.xlabel('Principal Component 1')
-        plt.ylabel('Principal Component 2')
-        plt.grid()
-        st.pyplot(plt)
-
-    elif df_pca.shape[1] == 3:  # 3D plot for 3 PCAs
-        fig = plt.figure(figsize=(10, 7))
-        ax = fig.add_subplot(111, projection='3d')
-        scatter = ax.scatter(df_pca[:, 0], df_pca[:, 1], df_pca[:, 2], c=cluster_labels_pca, cmap='viridis', s=50)
-        ax.set_title(f'Clusters Visualization with PCA (k={k})')
-        ax.set_xlabel('Principal Component 1')
-        ax.set_ylabel('Principal Component 2')
-        ax.set_zlabel('Principal Component 3')
-        plt.colorbar(scatter, ax=ax, label='Cluster')
-        st.pyplot(fig)
-
-
-    ########### Obter os pesos (loadings) dos PCAs ###########
-    loadings = pd.DataFrame(pca.components_, columns=df_cluster.columns[:-1], index=[f'PCA{i+1}' for i in range(pca.n_components_)])
-
-    # Exibir os pesos
-    print(loadings)
-
-    # Visualizar os pesos como um heatmap
-    import seaborn as sns
-
-    plt.figure(figsize=(10, 6))
-    sns.heatmap(loadings, annot=True, cmap='coolwarm', fmt=".2f")
-    plt.title('Pesos (Loadings) dos PCAs')
-    st.pyplot(plt)
-
-
-    ########## Relacionar os PCAs com as Variáveis Originais ##########
-    # Adicionar os PCAs ao DataFrame original
-    pca_df = pd.DataFrame(df_pca, columns=[f'PCA{i + 1}' for i in range(pca.n_components_)])
-    pca_df = pd.concat([pca_df, df_cluster.reset_index(drop=True)], axis=1)
-
-    # Calcular correlações
-    correlations = pca_df.corr()
-
-    # Visualizar as correlações dos PCAs com as variáveis originais
-    plt.figure(figsize=(12, 8))
-    sns.heatmap(correlations.iloc[:pca.n_components_, pca.n_components_:], annot=True, cmap='coolwarm', fmt=".2f")
-    plt.title('Correlação entre PCAs e Variáveis Originais')
-    st.pyplot(plt)
+    ############################################################################################################################################################################################################xwww
 
 with tab5:
     cols = [
